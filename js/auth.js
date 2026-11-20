@@ -57,9 +57,16 @@ const Auth = (function() {
         callback: handleCredential_,
         auto_select: false
       });
+      // Renderizar botón pendiente si ya se pidió
+      if (botonPendiente_) {
+        mostrarBotonLogin(botonPendiente_);
+        botonPendiente_ = null;
+      }
     };
     document.head.appendChild(script);
   }
+
+  let botonPendiente_ = null;
 
   /**
    * Muestra el botón de Google Sign-In en un contenedor.
@@ -69,18 +76,19 @@ const Auth = (function() {
     const el = typeof contenedor === 'string' ? document.getElementById(contenedor) : contenedor;
     if (!el) return;
 
-    if (typeof google !== 'undefined' && google.accounts) {
+    if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
       google.accounts.id.renderButton(el, {
         type: 'standard',
         theme: 'outline',
         size: 'large',
         text: 'signin_with',
         shape: 'rectangular',
-        locale: 'es'
+        locale: 'es',
+        width: el.offsetWidth || 300
       });
     } else {
-      // GSI aún no cargó, mostrar botón manual
-      el.innerHTML = '<button onclick="Auth.loginManual()" class="btn-google">Iniciar sesión con Google</button>';
+      // GSI aún no cargó, guardar referencia para renderizar después
+      botonPendiente_ = contenedor;
     }
   }
 
