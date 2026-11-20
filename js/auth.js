@@ -6,7 +6,7 @@
 
 const Auth = (function() {
 
-  const GOOGLE_CLIENT_ID = ''; // Se configura al desplegar
+  const GOOGLE_CLIENT_ID = '740126822035-nl9u7q25o7os4i73nolq4rpn0gsado9g.apps.googleusercontent.com';
   const STORAGE_KEY = 'ce_session';
 
   let usuario = null;
