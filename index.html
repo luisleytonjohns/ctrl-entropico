@@ -654,7 +654,7 @@ async function enviarContacto(e){
   };
   try{
     // URL del Apps Script que reenvía a ambos Gmail
-    const url='URL_APPS_SCRIPT_CONTACTO';
+    const url='https://script.google.com/macros/s/AKfycby6MA4FRLGJdKBEgufX3uL5-IlvZv4Q-zZ7svj2dxI_MgigRkOUvPxHPUtoMK53Ypevsw/exec';
     await fetch(url,{method:'POST',body:JSON.stringify(datos),headers:{'Content-Type':'text/plain'}});
     document.getElementById('form-ok').style.display='block';
     form.reset();
