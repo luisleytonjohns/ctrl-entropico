@@ -714,13 +714,8 @@ Auth.init({
   onLogout: function() {}
 });
 
-// Esperar a que GSI cargue y renderizar el botón de Google
-var _gsiWait = setInterval(function(){
-  if(typeof google !== 'undefined' && google.accounts){
-    clearInterval(_gsiWait);
-    Auth.mostrarBotonLogin('btn-google');
-  }
-}, 200);
+// Renderizar botón de Google (auth.js espera a que GSI cargue)
+Auth.mostrarBotonLogin('btn-google');
 </script>
 
 </body>
