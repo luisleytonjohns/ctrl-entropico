@@ -683,43 +683,45 @@ document.getElementById('btn-install-caja').addEventListener('click',function(e)
   else{alert('Para instalar: abre el menú del navegador y selecciona "Instalar aplicación" o "Añadir a pantalla de inicio".');}
 });
 
-// Google Sign-In: inicializar cuando GSI cargue
-window.ceGsiListo = function() {
-  Auth.init({
-    onLogin: async function(usuario) {
-      // Verificar perfil en el backend
-      try {
-        const resp = await API.miPerfil();
-        if (!resp.ok) {
-          alert('Bienvenido/a. Tu cuenta no está registrada en ningún curso activo.');
-          return;
-        }
-        const perfil = resp.data;
-        if (!perfil.registrado) {
-          // Redirigir al registro
-          window.location.href = 'equipos.html';
-        } else if (perfil.rol === 'academico') {
-          window.location.href = 'admin.html';
-        } else {
-          // Estudiante registrado, ir a la app
-          window.location.href = 'equipos.html';
-        }
-      } catch(err) {
-        alert('Error al conectar con el servidor. Intenta nuevamente.');
-      }
-    },
-    onLogout: function() {}
-  });
-  Auth.mostrarBotonLogin('btn-google');
-};
+});
 </script>
 
 <script src="js/auth.js"></script>
 <script src="js/api.js"></script>
 <script>
 API.configurar('https://script.google.com/macros/s/AKfycbw6C9ihsdqUnD2jolAxeb2TFG3IDqzNcuAZP8MSk8J-qpseuY2KDxKB_8ub68oZvISi/exec');
+
+Auth.init({
+  onLogin: async function(usuario) {
+    try {
+      var resp = await API.miPerfil();
+      if (!resp.ok) {
+        alert('Bienvenido/a ' + usuario.nombre + '. Tu cuenta aún no está registrada en ningún curso activo.');
+        return;
+      }
+      var perfil = resp.data;
+      if (!perfil.registrado) {
+        window.location.href = 'equipos.html';
+      } else if (perfil.rol === 'academico') {
+        window.location.href = 'admin.html';
+      } else {
+        window.location.href = 'equipos.html';
+      }
+    } catch(err) {
+      alert('Error al conectar con el servidor.');
+    }
+  },
+  onLogout: function() {}
+});
+
+// Esperar a que GSI cargue y renderizar el botón de Google
+var _gsiWait = setInterval(function(){
+  if(typeof google !== 'undefined' && google.accounts){
+    clearInterval(_gsiWait);
+    Auth.mostrarBotonLogin('btn-google');
+  }
+}, 200);
 </script>
-<script src="https://accounts.google.com/gsi/client" async defer onload="ceGsiListo()"></script>
 
 </body>
 </html>
