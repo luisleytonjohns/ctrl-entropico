@@ -22,6 +22,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap">
 <link rel="icon" href="img/icon.png" type="image/png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="img/icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="CTRL ENTROPICO">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1B2A4A">
 <style>
 /* ═══════════════════════════════════════════════════
    CTRL ENTROPICO · Landing Page
@@ -656,6 +663,28 @@ async function enviarContacto(e){
   }
   btn.disabled=false;btn.textContent='Enviar mensaje';
 }
+
+// PWA: registrar Service Worker
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(function(){});
+}
+
+// PWA: botón Instalar
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',function(e){
+  e.preventDefault();
+  deferredPrompt=e;
+});
+document.getElementById('btn-install-nav').addEventListener('click',function(e){
+  e.preventDefault();
+  if(deferredPrompt){deferredPrompt.prompt();deferredPrompt=null;}
+  else{alert('Para instalar: abre el menú del navegador y selecciona "Instalar aplicación" o "Añadir a pantalla de inicio".');}
+});
+document.getElementById('btn-install-caja').addEventListener('click',function(e){
+  e.preventDefault();
+  if(deferredPrompt){deferredPrompt.prompt();deferredPrompt=null;}
+  else{alert('Para instalar: abre el menú del navegador y selecciona "Instalar aplicación" o "Añadir a pantalla de inicio".');}
+});
 </script>
 
 </body>

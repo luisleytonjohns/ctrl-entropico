@@ -1,0 +1,36 @@
+{
+  "name": "CTRL ENTROPICO",
+  "short_name": "CTRL ENTROPICO",
+  "description": "Simulador de Negocios. Desarrollo 100% chileno.",
+  "start_url": "/ctrl-entropico/",
+  "scope": "/ctrl-entropico/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0B1A30",
+  "theme_color": "#1B2A4A",
+  "lang": "es-CL",
+  "icons": [
+    {
+      "src": "img/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "img/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["education", "business"],
+  "screenshots": [
+    {
+      "src": "img/og-image.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "CTRL ENTROPICO - Simulador de Negocios"
+    }
+  ]
+}
