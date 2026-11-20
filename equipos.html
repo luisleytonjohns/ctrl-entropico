@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CTRL ENTROPICO — Formaci&oacute;n de equipos</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilos.css">
+  <link rel="icon" href="img/icon.png" type="image/png">
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-logo">
+        <img src="img/icon.png" alt="">
+        <div>
+          <div class="marca">CTRL <span>ENTROPICO</span></div>
+          <div class="header-institucion">Formaci&oacute;n de equipos</div>
+        </div>
+      </div>
+      <div class="header-usuario">
+        <span class="nombre" id="nombre-usuario"></span>
+        <img id="foto-usuario" src="" alt="">
+      </div>
+    </div>
+  </header>
+
+  <main class="contenedor" style="padding-top:2rem;padding-bottom:2rem">
+
+    <!-- OPCIÓN 1: CREAR EQUIPO -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h2 class="card-title">Crear un equipo nuevo</h2>
+      </div>
+      <form id="form-crear" onsubmit="return false">
+        <div class="form-grupo">
+          <label class="form-label">Nombre de la empresa *</label>
+          <input type="text" id="crear-empresa" class="form-input" placeholder="Nombre de tu compa&ntilde;&iacute;a simulada" required>
+          <p class="form-hint">Este nombre identificar&aacute; a tu equipo en el mercado, en los rankings y en Vox Liber.</p>
+        </div>
+        <div class="form-grupo">
+          <label class="form-label">Nombre del producto</label>
+          <input type="text" id="crear-producto" class="form-input" placeholder="Nombre de tu producto o marca principal">
+        </div>
+        <div id="crear-error" class="alerta alerta-error oculto"></div>
+        <div id="crear-exito" class="alerta alerta-exito oculto"></div>
+        <button type="submit" class="btn btn-primary btn-lg" onclick="crearEquipo()">Crear equipo</button>
+      </form>
+    </div>
+
+    <!-- OPCIÓN 2: UNIRSE A UN EQUIPO -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h2 class="card-title">Unirse a un equipo existente</h2>
+      </div>
+      <form id="form-unirse" onsubmit="return false">
+        <div class="form-grupo">
+          <label class="form-label">C&oacute;digo del equipo *</label>
+          <input type="text" id="unirse-codigo" class="form-input" placeholder="Ej: ABC123" maxlength="6" style="text-transform:uppercase;letter-spacing:4px;font-size:1.2rem;text-align:center;max-width:200px">
+          <p class="form-hint">P&iacute;dele el c&oacute;digo al creador del equipo.</p>
+        </div>
+        <div id="unirse-error" class="alerta alerta-error oculto"></div>
+        <div id="unirse-exito" class="alerta alerta-exito oculto"></div>
+        <button type="submit" class="btn btn-secondary btn-lg" onclick="unirseEquipo()">Unirme al equipo</button>
+      </form>
+    </div>
+
+    <!-- EQUIPOS FORMADOS -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Equipos formados</h2>
+        <button class="btn btn-sm btn-outline" onclick="cargarEquipos()">Actualizar</button>
+      </div>
+      <div id="lista-equipos">
+        <p class="text-secondary">Cargando equipos...</p>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="js/auth.js"></script>
+  <script src="js/api.js"></script>
+  <script>
+    API.configurar('URL_DE_LA_WEB_APP_AQUI');
+    const params = new URLSearchParams(window.location.search);
+    const cursoId = params.get('curso');
+
+    Auth.init({
+      onLogin: function(u) {
+        document.getElementById('nombre-usuario').textContent = u.nombre;
+        document.getElementById('foto-usuario').src = u.foto;
+        cargarEquipos();
+      },
+      onLogout: function() { window.location.href = 'index.html'; }
+    });
+
+    async function crearEquipo() {
+      const errorDiv = document.getElementById('crear-error');
+      const exitoDiv = document.getElementById('crear-exito');
+      errorDiv.classList.add('oculto');
+      exitoDiv.classList.add('oculto');
+
+      const resp = await API.crearEquipo({
+        cursoId: cursoId,
+        nombreEmpresa: document.getElementById('crear-empresa').value,
+        nombreProducto: document.getElementById('crear-producto').value
+      });
+
+      if (!resp.ok) {
+        errorDiv.textContent = resp.error;
+        errorDiv.classList.remove('oculto');
+        return;
+      }
+
+      exitoDiv.innerHTML = resp.data.mensaje + '<br><strong style="font-size:1.3rem;letter-spacing:3px">' + resp.data.codigoUnion + '</strong>';
+      exitoDiv.classList.remove('oculto');
+      cargarEquipos();
+    }
+
+    async function unirseEquipo() {
+      const errorDiv = document.getElementById('unirse-error');
+      const exitoDiv = document.getElementById('unirse-exito');
+      errorDiv.classList.add('oculto');
+      exitoDiv.classList.add('oculto');
+
+      const resp = await API.unirseEquipo(document.getElementById('unirse-codigo').value);
+
+      if (!resp.ok) {
+        errorDiv.textContent = resp.error;
+        errorDiv.classList.remove('oculto');
+        return;
+      }
+
+      exitoDiv.textContent = resp.data.mensaje;
+      exitoDiv.classList.remove('oculto');
+      cargarEquipos();
+    }
+
+    async function cargarEquipos() {
+      const resp = await API.listarEquipos(cursoId);
+      const div = document.getElementById('lista-equipos');
+
+      if (!resp.ok || !resp.data.equipos.length) {
+        div.innerHTML = '<p class="text-light">Aún no se han formado equipos.</p>';
+        return;
+      }
+
+      let html = '<table class="tabla"><thead><tr><th>Empresa</th><th>Integrantes</th><th>Estado</th></tr></thead><tbody>';
+      resp.data.equipos.forEach(function(eq) {
+        html += '<tr>';
+        html += '<td><strong>' + eq.nombreEmpresa + '</strong>' + (eq.nombreProducto ? '<br><span class="text-sm text-secondary">' + eq.nombreProducto + '</span>' : '') + '</td>';
+        html += '<td>' + eq.integrantes + '</td>';
+        html += '<td><span class="badge ' + (eq.estado === 'formacion' ? 'badge-orange' : 'badge-green') + '">' + eq.estado + '</span></td>';
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+      div.innerHTML = html;
+    }
+  </script>
+</body>
+</html>

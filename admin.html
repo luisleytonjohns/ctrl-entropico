@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CTRL ENTROPICO — Panel del acad&eacute;mico</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilos.css">
+  <link rel="icon" href="img/icon.png" type="image/png">
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-logo">
+        <img src="img/icon.png" alt="">
+        <div>
+          <div class="marca">CTRL <span>ENTROPICO</span></div>
+          <div class="header-institucion">Panel del acad&eacute;mico</div>
+        </div>
+      </div>
+      <div class="header-usuario">
+        <span class="nombre" id="admin-nombre"></span>
+        <button class="btn btn-sm btn-outline" style="color:white;border-color:rgba(255,255,255,0.3)" onclick="Auth.logout()">Salir</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="contenedor" style="padding-top:2rem;padding-bottom:2rem">
+
+    <!-- Navegación -->
+    <div class="flex gap-2 mb-3 flex-wrap" id="admin-nav">
+      <button class="btn btn-secondary btn-sm" onclick="AdminApp.verCursos()">Mis cursos</button>
+      <button class="btn btn-outline btn-sm" onclick="AdminApp.verEstudiantes()">Estudiantes</button>
+      <button class="btn btn-outline btn-sm" onclick="AdminApp.verEquipos()">Equipos</button>
+      <button class="btn btn-outline btn-sm" onclick="AdminApp.verSimulacion()">Simulaci&oacute;n</button>
+      <button class="btn btn-outline btn-sm" onclick="AdminApp.verRanking()">Rankings</button>
+      <button class="btn btn-outline btn-sm" onclick="AdminApp.verEntregables()">Entregables</button>
+      <button class="btn btn-outline btn-sm" onclick="AdminApp.verCalificaciones()">Calificaciones</button>
+    </div>
+
+    <div id="admin-contenido">
+      <div class="card"><div class="spinner"></div> Cargando panel...</div>
+    </div>
+
+  </main>
+
+  <script src="js/auth.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/admin.js"></script>
+  <script>
+    API.configurar('URL_DE_LA_WEB_APP_AQUI');
+
+    Auth.init({
+      onLogin: function(u) {
+        document.getElementById('admin-nombre').textContent = u.nombre;
+        AdminApp.init();
+      },
+      onLogout: function() { window.location.href = 'index.html'; }
+    });
+  </script>
+</body>
+</html>

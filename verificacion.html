@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CTRL ENTROPICO — Verificaci&oacute;n de documento</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilos.css">
+  <link rel="icon" href="img/icon.png" type="image/png">
+</head>
+<body>
+
+  <div class="landing" style="min-height:100vh">
+    <img src="img/icon.png" alt="CTRL ENTROPICO" style="width:80px;height:80px;margin-bottom:1rem">
+    <h2 style="margin-bottom:0.25rem">CTRL <span class="text-orange">ENTROPICO</span></h2>
+    <p class="text-secondary text-sm mb-4">Verificaci&oacute;n de documentos</p>
+
+    <div class="card contenedor-sm" style="text-align:left">
+      <!-- Búsqueda de folio -->
+      <div id="busqueda">
+        <h3 class="mb-2">Verificar un documento</h3>
+        <p class="text-secondary mb-3">Ingresa el folio que aparece en el documento o escanea el c&oacute;digo QR.</p>
+        <div class="flex gap-2" style="align-items:flex-end">
+          <div class="form-grupo" style="flex:1;margin-bottom:0">
+            <label class="form-label">Folio</label>
+            <input type="text" id="input-folio" class="form-input" placeholder="CE-2026-12345" style="text-transform:uppercase">
+          </div>
+          <button class="btn btn-primary" onclick="verificar()">Verificar</button>
+        </div>
+      </div>
+
+      <!-- Resultado -->
+      <div id="resultado" class="oculto mt-3">
+        <div id="resultado-valido" class="oculto">
+          <div class="alerta alerta-exito">
+            <strong>Documento v&aacute;lido</strong>
+          </div>
+          <table class="tabla mt-2">
+            <tr><td class="font-semibold" style="width:120px">Folio</td><td id="res-folio"></td></tr>
+            <tr><td class="font-semibold">Tipo</td><td id="res-tipo"></td></tr>
+            <tr><td class="font-semibold">Descripci&oacute;n</td><td id="res-descripcion"></td></tr>
+            <tr><td class="font-semibold">Fecha</td><td id="res-fecha"></td></tr>
+          </table>
+        </div>
+        <div id="resultado-invalido" class="oculto">
+          <div class="alerta alerta-error">
+            <strong>Documento no encontrado</strong>
+            <p class="mt-1" id="res-error"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="landing-footer">
+      <p>&copy; 2026 Luis Ernest Leyton Johns. Todos los derechos reservados.</p>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    API.configurar('URL_DE_LA_WEB_APP_AQUI');
+
+    // Auto-verificar si viene folio en la URL
+    const params = new URLSearchParams(window.location.search);
+    const folioUrl = params.get('folio');
+    if (folioUrl) {
+      document.getElementById('input-folio').value = folioUrl;
+      verificar();
+    }
+
+    async function verificar() {
+      const folio = document.getElementById('input-folio').value.trim().toUpperCase();
+      if (!folio) return;
+
+      document.getElementById('resultado').classList.remove('oculto');
+      document.getElementById('resultado-valido').classList.add('oculto');
+      document.getElementById('resultado-invalido').classList.add('oculto');
+
+      const resp = await API.llamar('verificarFolio', { folio: folio });
+
+      if (resp.ok && resp.data.valido) {
+        document.getElementById('res-folio').textContent = resp.data.folio;
+        document.getElementById('res-tipo').textContent = resp.data.tipo;
+        document.getElementById('res-descripcion').textContent = resp.data.descripcion;
+        document.getElementById('res-fecha').textContent = resp.data.fecha;
+        document.getElementById('resultado-valido').classList.remove('oculto');
+      } else {
+        document.getElementById('res-error').textContent = resp.error || 'El folio ingresado no corresponde a ningún documento emitido por CTRL ENTROPICO.';
+        document.getElementById('resultado-invalido').classList.remove('oculto');
+      }
+    }
+
+    // Enter para verificar
+    document.getElementById('input-folio').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') verificar();
+    });
+  </script>
+</body>
+</html>
