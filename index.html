@@ -1,233 +1,649 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CTRL ENTROPICO — Simulador de Negocios Universitario</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/estilos.css">
-  <link rel="icon" href="img/icon.png" type="image/png">
-  <style>
-    /* LANDING OSCURA (estilo Metis) */
-    .velo-carga{position:fixed;inset:0;z-index:9999;background:#1B2A4A;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.5s ease}
-    .velo-carga.oculto{opacity:0;pointer-events:none}
-    .velo-carga img{width:80px;height:80px;margin-bottom:1.5rem;animation:pulse 2s ease-in-out infinite}
-    .velo-carga p{color:rgba(255,255,255,0.6);font-family:'Poppins',sans-serif;font-size:0.9rem}
-    @keyframes pulse{0%,100%{transform:scale(1);opacity:0.8}50%{transform:scale(1.05);opacity:1}}
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CTRL ENTROPICO &mdash; Simulador de Negocios</title>
+<meta name="description" content="CTRL ENTROPICO: simulador de negocios con informaci&oacute;n realista del mercado chileno. 12 industrias, 6 m&oacute;dulos funcionales. Desarrollo 100% chileno.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap">
+<link rel="icon" href="img/icon.png" type="image/png">
+<style>
+/* ═══════════════════════════════════════════════════
+   CTRL ENTROPICO · Landing Page
+   Tipograf&iacute;a: Lexend (display) + Inter (cuerpo)
+   ═══════════════════════════════════════════════════ */
+:root{
+  --navy:#1B2A4A;--navy-deep:#0B1A30;--blue:#2E5C8A;
+  --orange:#E8600A;--orange-t:#B84A08;--turquesa:#00A896;--turquesa-t:#007A6D;
+  --marfil:#F7F5EF;--pizarra:#475569;--borde:#DEDBD2;--sup:#FFFFFF;--suave:#EFECE4;
+  --disp:"Lexend",system-ui,sans-serif;--sans:"Inter",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+html,body{margin:0;min-height:100%}
+body{background:var(--sup);color:var(--navy);font:15px/1.55 var(--sans)}
+h1,h2,h3,h4{font-family:var(--disp);margin:0;text-wrap:balance}
+a{color:var(--blue);text-decoration:none}
+img{max-width:100%;display:block}
+button{font:inherit;cursor:pointer}
 
-    .landing-dark{min-height:100vh;background:#1B2A4A;color:white;display:flex;flex-direction:column;position:relative;overflow:hidden}
-    .landing-dark::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 20% 80%,rgba(232,96,10,0.08) 0%,transparent 50%),radial-gradient(circle at 80% 20%,rgba(46,92,138,0.1) 0%,transparent 50%),radial-gradient(circle at 50% 50%,rgba(255,255,255,0.02) 0%,transparent 70%);pointer-events:none}
+/* Contenedor */
+.in{max-width:1160px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left));padding-right:max(20px,env(safe-area-inset-right))}
 
-    .landing-contenido{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;position:relative;z-index:1}
-    .landing-logo{width:100px;height:100px;margin-bottom:2rem;filter:drop-shadow(0 4px 20px rgba(232,96,10,0.3))}
-    .landing-titulo{font-size:3rem;font-weight:800;letter-spacing:2px;margin-bottom:0.25rem;line-height:1}
-    .landing-titulo span{color:#E8600A}
-    .landing-tagline{font-size:1.1rem;font-weight:300;color:#E8600A;font-style:italic;margin-bottom:0.5rem}
-    .landing-subtitulo{font-size:0.9rem;color:rgba(255,255,255,0.5);letter-spacing:3px;text-transform:uppercase;font-weight:500;margin-bottom:2.5rem}
-    .landing-linea{width:60px;height:3px;background:#E8600A;margin:0 auto 2.5rem;border-radius:2px}
+/* Franja */
+.franja{display:flex;height:5px}.franja i{flex:1}
 
-    .landing-login-area{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:2rem 2.5rem;backdrop-filter:blur(10px);max-width:400px;width:100%}
-    .landing-login-area h3{color:white;font-size:1.1rem;font-weight:600;margin-bottom:0.5rem}
-    .landing-login-area p{color:rgba(255,255,255,0.5);font-size:0.85rem;margin-bottom:1.5rem}
-    .landing-login-area #btn-google{display:flex;justify-content:center}
+/* ── BARRA NAV ── */
+.p-barra{border-bottom:1px solid rgba(255,255,255,.07);position:sticky;top:0;z-index:20;background:rgba(11,26,48,.94);backdrop-filter:blur(8px)}
+.p-barra .in{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:14px}
+.marca{display:flex;align-items:center;gap:10px;color:var(--marfil);text-decoration:none}
+.marca img{height:32px;width:32px;border-radius:8px}
+.marca .word{font:800 1.35rem/1 var(--disp);letter-spacing:.02em}
+.marca .word em{font-style:normal;color:var(--orange)}
+.p-nav{display:flex;gap:22px;align-items:center}
+.p-nav a{color:#C9D3E3;font:500 .68rem/1 var(--disp);letter-spacing:.14em;text-transform:uppercase;padding:8px 0;border-bottom:2px solid transparent;transition:all .2s}
+.p-nav a:hover,.p-nav a.activo{color:#fff;border-bottom-color:var(--turquesa)}
+.p-nav .p-instalar{border:1px solid var(--turquesa);border-radius:999px;padding:8px 16px;color:#fff;display:inline-flex;align-items:center;gap:7px}
+.p-nav .p-instalar:hover{background:rgba(0,168,150,.15)}
+.p-nav .p-ingresar{background:var(--orange);border:0;border-radius:999px;padding:9px 20px;color:#fff;font:600 .68rem/1 var(--disp);letter-spacing:.12em;text-transform:uppercase}
+.p-nav .p-ingresar:hover{background:var(--orange-t)}
 
-    .landing-institucion{margin-top:1.5rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,0.1)}
-    .landing-institucion img{height:32px;opacity:0.6;margin-bottom:0.5rem}
-    .landing-institucion p{color:rgba(255,255,255,0.4);font-size:0.8rem}
+/* ── HERO ── */
+.p-hero{position:relative;overflow:hidden;background:radial-gradient(ellipse at 70% 40%,#13305A 0%,var(--navy-deep) 60%);min-height:600px;display:flex;align-items:center}
+.p-hero .in{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:40px;padding-block:60px}
+.p-texto{display:grid;gap:20px;position:relative;z-index:1}
+.p-rotulo{display:flex;align-items:center;gap:14px;font:500 .7rem/1 var(--disp);letter-spacing:.28em;text-transform:uppercase;color:#C9D3E3}
+.p-rotulo::before{content:"";width:44px;height:2px;background:var(--turquesa)}
+.p-hero h1{font:300 clamp(2.2rem,4.5vw,3.4rem)/1.12 var(--disp);color:#fff}
+.p-hero h1 em{font-style:normal;font-weight:500;color:var(--orange)}
+.p-hero h1 b{font-weight:500;color:var(--turquesa)}
+.p-lema{font:600 clamp(.76rem,1.3vw,.92rem)/1.4 var(--disp);letter-spacing:.2em;text-transform:uppercase;color:#fff;margin:0}
+.p-bajada{margin:0;max-width:460px;font-size:.95rem;line-height:1.7;color:#C9D3E3}
+.p-boton{justify-self:start;background:none;color:#fff;border:1.5px solid var(--turquesa);border-radius:999px;padding:14px 28px;font:600 .72rem/1 var(--disp);letter-spacing:.18em;text-transform:uppercase;display:inline-flex;gap:12px;transition:background .2s}
+.p-boton:hover{background:rgba(0,168,150,.15)}
+.p-boton span{color:var(--turquesa)}
+/* Logo en hero */
+.p-hero-logo{display:flex;align-items:center;justify-content:center}
+.p-hero-logo img{max-width:340px;width:80%;filter:drop-shadow(0 8px 40px rgba(232,96,10,.25));animation:flotar 4s ease-in-out infinite}
+@keyframes flotar{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
 
-    .landing-footer-dark{position:relative;z-index:1;text-align:center;padding:1.5rem 2rem;border-top:1px solid rgba(255,255,255,0.08)}
-    .landing-footer-dark p{color:rgba(255,255,255,0.3);font-size:0.75rem;margin:0}
-    .landing-footer-dark a{color:rgba(255,255,255,0.4)}
-    .landing-footer-dark a:hover{color:#E8600A}
+/* ── GALERÍA CIVILIZACIONES ── */
+.p-galeria{background:var(--sup);padding-block:40px 0}
+.galeria-strip{display:flex;gap:6px;overflow:hidden;height:180px}
+.galeria-strip img{height:100%;flex:1;min-width:0;object-fit:cover;border-radius:8px;transition:flex .3s}
+.galeria-strip img:hover{flex:1.5}
 
-    .landing-hero-img{max-width:600px;width:90%;margin-bottom:2rem;border-radius:12px;opacity:0.9;box-shadow:0 8px 40px rgba(0,0,0,0.3)}
+/* ── PROPUESTA + LOGIN ── */
+.p-propuesta{background:var(--marfil);color:var(--navy)}
+.p-propuesta .in{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(310px,.85fr);gap:48px;padding-block:72px;align-items:start}
+.p-izq{display:grid;gap:20px}
+.p-rotulo.oscuro{color:var(--pizarra)}
+.p-rotulo.oscuro::before{background:var(--orange)}
+.p-propuesta h2{font:400 clamp(1.6rem,2.8vw,2.2rem)/1.25 var(--disp);max-width:520px}
+.p-parrafo{margin:0;font-size:.98rem;line-height:1.75;color:#3D4A5C;max-width:540px}
+/* Pilares */
+.pilares{display:grid;grid-template-columns:repeat(3,1fr);margin-top:10px}
+.pilar{display:grid;justify-items:center;align-content:start;text-align:center;gap:8px;padding:6px 12px;border-left:1px solid #DCD9D0}
+.pilar:first-child{border-left:0}
+.pilar .ico{width:72px;height:72px;border-radius:50%;overflow:hidden}
+.pilar .ico img{width:100%;height:100%;object-fit:cover}
+.pilar b{font:600 .7rem/1.3 var(--disp);letter-spacing:.12em;text-transform:uppercase;margin-top:4px}
+.pilar p{margin:0;font-size:.8rem;line-height:1.45;color:#4A5568}
+/* Caja acceso */
+.p-acceso{background:#10213D;color:#E8EEF7;border-radius:16px;padding:30px;display:grid;gap:14px;box-shadow:0 24px 56px rgba(16,33,61,.25);position:relative;overflow:hidden}
+.p-acceso::after{content:"";position:absolute;right:0;bottom:0;width:64px;height:64px;background:linear-gradient(135deg,transparent 50%,var(--blue) 50%)}
+.p-acceso .marca .word{font:700 1.15rem/1 var(--disp)}
+.p-acceso h3{font:500 1.1rem/1.3 var(--disp);color:#fff;margin:0}
+.p-sub{margin:4px 0 0;font-size:.84rem;color:#A9B6CB}
+.btn-google{background:#fff;color:var(--navy);border:0;border-radius:10px;padding:13px;font:600 .86rem/1 var(--disp);display:flex;align-items:center;justify-content:center;gap:10px;width:100%;position:relative;z-index:1}
+.btn-google:hover{background:#f0f0f0}
+.btn-google svg{width:20px;height:20px;flex:none}
+.p-sep{display:flex;align-items:center;gap:10px;font-size:.78rem;color:#A9B6CB}
+.p-sep::before,.p-sep::after{content:"";flex:1;height:1px;background:#2A4268}
+.p-entrar{background:none;color:var(--turquesa);border:1px solid var(--turquesa);border-radius:10px;padding:12px;font:500 .84rem/1 var(--disp);display:flex;align-items:center;justify-content:center;gap:8px;width:100%;position:relative;z-index:1}
+.p-entrar:hover{background:rgba(0,168,150,.1)}
+.p-nota{margin:0;text-align:center;font-size:.76rem;color:#A9B6CB;position:relative;z-index:1}
 
-    @media(max-width:768px){.landing-titulo{font-size:2rem}.landing-login-area{padding:1.5rem;margin:0 1rem}}
-  </style>
+/* ── MÓDULOS ── */
+.p-modulos{background:var(--sup);padding-block:72px}
+.p-modulos .in{display:grid;gap:36px}
+.p-modulos h2{font:400 clamp(1.6rem,2.8vw,2.2rem)/1.25 var(--disp)}
+.p-modulos h2 em{font-style:normal;color:var(--orange)}
+.modulos-intro{font-size:.95rem;line-height:1.7;color:#3D4A5C;max-width:620px;margin:0}
+.modulos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.mod-card{background:var(--sup);border:1px solid var(--borde);border-radius:12px;padding:20px;display:grid;gap:8px;transition:border-color .2s}
+.mod-card:hover{border-color:var(--blue)}
+.mod-card .mod-borde{width:36px;height:3px;border-radius:2px}
+.mod-card .mod-num{font:700 .6rem/1 var(--disp);letter-spacing:.12em;text-transform:uppercase;color:var(--pizarra)}
+.mod-card h3{font:600 .98rem/1.25 var(--disp)}
+.mod-card p{margin:0;font-size:.82rem;line-height:1.5;color:var(--pizarra)}
+.mod-card .mod-tag{font:600 .68rem/1 var(--disp);color:var(--turquesa);margin-top:2px}
+
+/* ── CARACTERÍSTICAS ── */
+.p-caract{background:var(--marfil);padding-block:72px}
+.p-caract .in{display:grid;gap:36px}
+.p-caract h2{font:400 clamp(1.6rem,2.8vw,2.2rem)/1.25 var(--disp)}
+.p-caract h2 em{font-style:normal;color:var(--orange)}
+.caract-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.caract-item{display:grid;grid-template-columns:68px 1fr;gap:14px;align-items:start;padding:18px;background:var(--sup);border:1px solid var(--borde);border-radius:12px}
+.caract-item .c-img{width:60px;height:60px;border-radius:10px;overflow:hidden}
+.caract-item .c-img img{width:100%;height:100%;object-fit:cover}
+.caract-item h4{font:600 .88rem/1.3 var(--disp);margin-bottom:3px}
+.caract-item p{margin:0;font-size:.82rem;line-height:1.5;color:var(--pizarra)}
+
+/* ── INDUSTRIAS ── */
+.p-industrias{background:var(--sup);padding-block:72px}
+.p-industrias .in{display:grid;gap:36px}
+.p-industrias h2{font:400 clamp(1.6rem,2.8vw,2.2rem)/1.25 var(--disp)}
+.p-industrias h2 em{font-style:normal;color:var(--orange)}
+.p-industrias .intro{font-size:.95rem;line-height:1.7;color:#3D4A5C;max-width:600px;margin:0}
+.ind-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.ind-card{border:1px solid var(--borde);border-radius:12px;overflow:hidden;background:var(--sup);transition:border-color .2s}
+.ind-card:hover{border-color:var(--blue)}
+.ind-card .ind-img{height:130px;overflow:hidden}
+.ind-card .ind-img img{width:100%;height:100%;object-fit:cover;transition:transform .3s}
+.ind-card:hover .ind-img img{transform:scale(1.05)}
+.ind-card .ind-info{padding:10px 12px}
+.ind-card .ind-info b{display:block;font:600 .74rem/1.3 var(--disp);letter-spacing:.06em;text-transform:uppercase}
+.ind-card .ind-info small{font-size:.72rem;color:var(--pizarra);line-height:1.4}
+
+/* ── CITA ── */
+.p-cita{background:linear-gradient(100deg,#0E2340 0%,#14325A 60%,#0E2340 100%);position:relative;overflow:hidden}
+.p-cita::after{content:"";position:absolute;right:0;top:0;bottom:0;width:300px;background:
+  linear-gradient(135deg,transparent 50%,var(--turquesa) 50%) 50px 80px/80px 80px no-repeat,
+  linear-gradient(45deg,var(--orange) 50%,transparent 50%) 160px 60px/100px 100px no-repeat,
+  linear-gradient(225deg,var(--blue) 50%,transparent 50%) 200px 0/70px 70px no-repeat;opacity:.85}
+.p-cita .in{padding-block:52px}
+.p-cita blockquote{margin:0;max-width:500px;display:grid;gap:12px;position:relative;z-index:1}
+.p-cita blockquote::before{content:"";width:44px;height:3px;background:var(--orange)}
+.p-cita blockquote p{font:400 1.12rem/1.5 var(--disp);color:var(--marfil);font-style:italic;margin:0}
+.p-cita cite{font:600 .68rem/1 var(--disp);letter-spacing:.16em;text-transform:uppercase;color:#C9D3E3;font-style:normal}
+
+/* ── CONTACTO ── */
+.p-contacto{background:var(--marfil);padding-block:72px}
+.p-contacto .in{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start}
+.p-contacto h2{font:400 clamp(1.6rem,2.8vw,2.2rem)/1.25 var(--disp)}
+.p-contacto h2 em{font-style:normal;color:var(--orange)}
+.contacto-info{display:grid;gap:16px}
+.contacto-info p{margin:0;font-size:.95rem;line-height:1.7;color:#3D4A5C}
+.contacto-dato{display:flex;align-items:center;gap:10px;font-size:.88rem;color:var(--navy)}
+.contacto-dato svg{width:20px;height:20px;color:var(--orange);flex:none}
+.contacto-form{background:var(--sup);border:1px solid var(--borde);border-radius:14px;padding:28px;display:grid;gap:14px}
+.contacto-form label{font:600 .76rem/1 var(--disp);letter-spacing:.08em;text-transform:uppercase;color:var(--pizarra)}
+.contacto-form input,.contacto-form textarea,.contacto-form select{width:100%;border:1px solid var(--borde);border-radius:8px;background:var(--sup);color:var(--navy);padding:10px 12px;font:15px/1.4 var(--sans)}
+.contacto-form textarea{min-height:100px;resize:vertical}
+.contacto-form input:focus,.contacto-form textarea:focus,.contacto-form select:focus{outline:2px solid var(--orange);outline-offset:2px}
+.campo{display:grid;gap:5px}
+.btn-enviar{background:var(--orange);color:#fff;border:0;border-radius:10px;padding:14px;font:600 .9rem/1 var(--disp);letter-spacing:.06em;width:100%}
+.btn-enviar:hover{background:var(--orange-t)}
+.form-ok{background:#E7F2EC;border:1px solid #B9D8C6;color:#1B6F45;border-radius:8px;padding:12px;font-size:.88rem;display:none}
+
+/* ── FOOTER ── */
+.p-footer{background:var(--navy-deep);border-top:1px solid rgba(255,255,255,.06)}
+.p-footer .in{padding-block:18px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.p-footer .marca .word{font:700 1rem/1 var(--disp)}
+.p-footer .lema{font:600 .6rem/1.4 var(--disp);letter-spacing:.14em;text-transform:uppercase;color:rgba(247,245,239,.4)}
+.f-izq{display:grid;gap:5px}
+.f-der{display:grid;gap:4px;text-align:right}
+.f-der .autor{font-size:.76rem;color:rgba(247,245,239,.4)}
+.f-der .autor a{color:rgba(247,245,239,.55)}
+.f-der .autor a:hover{color:var(--orange)}
+.f-der .copy{font-size:.68rem;color:rgba(247,245,239,.25)}
+.f-links{display:flex;gap:12px}
+.f-links a{color:rgba(247,245,239,.5);font-size:.78rem}
+.f-links a:hover{color:var(--orange)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .p-hero .in{grid-template-columns:1fr;text-align:center}
+  .p-hero-logo{display:none}
+  .p-texto{justify-items:center}
+  .p-rotulo{justify-content:center}
+  .p-bajada{text-align:center}
+  .p-propuesta .in{grid-template-columns:1fr;gap:32px}
+  .modulos-grid{grid-template-columns:repeat(2,1fr)}
+  .caract-grid{grid-template-columns:1fr}
+  .ind-grid{grid-template-columns:repeat(3,1fr)}
+  .p-contacto .in{grid-template-columns:1fr}
+}
+@media(max-width:640px){
+  .p-nav a:not(.p-instalar):not(.p-ingresar){display:none}
+  .pilares{grid-template-columns:1fr}
+  .modulos-grid{grid-template-columns:1fr}
+  .ind-grid{grid-template-columns:repeat(2,1fr)}
+  .galeria-strip{height:110px}
+  .p-footer .in{flex-direction:column;text-align:center}
+  .f-der{text-align:center}
+}
+</style>
 </head>
 <body>
 
-  <!-- VELO DE CARGA -->
-  <div id="velo-carga" class="velo-carga">
-    <img src="img/icon.png" alt="CTRL ENTROPICO">
-    <p>Por favor espere mientras se carga la p&aacute;gina</p>
-  </div>
+<!-- Franja -->
+<div class="franja">
+  <i style="background:#1B2A4A"></i><i style="background:#2E5C8A"></i><i style="background:#E8600A"></i><i style="background:#2E5C8A"></i><i style="background:#1B2A4A"></i>
+</div>
 
-  <!-- LANDING / LOGIN -->
-  <div id="pantalla-login" class="landing-dark oculto">
-    <div class="landing-contenido">
-      <img src="img/icon.png" alt="CTRL ENTROPICO" class="landing-logo">
-      <h1 class="landing-titulo">CTRL <span>ENTROPICO</span></h1>
-      <p class="landing-tagline">Cuando la gesti&oacute;n hace la diferencia.</p>
-      <p class="landing-subtitulo">Simulador de Negocios Universitario</p>
-      <div class="landing-linea"></div>
-
-      <img src="img/hero.png" alt="Centro de operaciones" class="landing-hero-img">
-
-      <div class="landing-login-area">
-        <h3>Ingresar al sistema</h3>
-        <p>Usa tu cuenta Google institucional o personal</p>
-        <div id="btn-google"></div>
-      </div>
-
-      <div class="landing-institucion" id="landing-inst" style="display:none">
-        <img id="landing-inst-logo" src="" alt="">
-        <p id="landing-inst-texto"></p>
-      </div>
-    </div>
-    <footer class="landing-footer-dark">
-      <p>&copy; 2026 Luis Ernest Leyton Johns &middot; ORCID 0000-0002-4462-403X &middot; <a href="https://www.linkedin.com/in/luis-leyton-johns" target="_blank">LinkedIn</a></p>
-    </footer>
-  </div>
-
-  <!-- CARGA POST-LOGIN -->
-  <div id="pantalla-carga" class="landing-dark oculto">
-    <div class="landing-contenido">
-      <div class="spinner" style="width:40px;height:40px;border-width:3px;border-color:rgba(255,255,255,0.2);border-top-color:#E8600A"></div>
-      <p style="color:rgba(255,255,255,0.5);margin-top:1rem">Cargando tu perfil...</p>
+<!-- NAV -->
+<nav class="p-barra">
+  <div class="in">
+    <a href="#" class="marca">
+      <img src="img/icon.png" alt="CE">
+      <span class="word">CTRL <em>ENTROPICO</em></span>
+    </a>
+    <div class="p-nav">
+      <a href="#inicio" class="activo">Inicio</a>
+      <a href="#que-es">&iquest;Qu&eacute; es?</a>
+      <a href="#modulos">M&oacute;dulos</a>
+      <a href="#industrias">Industrias</a>
+      <a href="#contacto">Contacto</a>
+      <a class="p-instalar" href="#" id="btn-install-nav">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 17v2a2 2 0 002 2h10a2 2 0 002-2v-2"/></svg>
+        Instalar App
+      </a>
+      <a href="#acceso" class="p-ingresar">Ingresar</a>
     </div>
   </div>
+</nav>
 
-  <!-- REGISTRO -->
-  <div id="pantalla-registro" class="oculto" style="background:var(--bg);min-height:100vh">
-    <header class="header">
-      <div class="header-inner">
-        <div class="header-logo">
-          <img src="img/icon.png" alt="">
-          <div><div class="marca">CTRL <span>ENTROPICO</span></div></div>
+<!-- HERO -->
+<section class="p-hero" id="inicio">
+  <div class="in">
+    <div class="p-texto">
+      <div class="p-rotulo">Simulador de Negocios</div>
+      <h1>Donde la <em>gesti&oacute;n</em> hace la <b>diferencia</b></h1>
+      <p class="p-lema">Decide &middot; Compite &middot; Aprende &middot; Gestiona</p>
+      <p class="p-bajada">
+        Plataforma de simulaci&oacute;n empresarial donde equipos dirigen compa&ntilde;&iacute;as
+        completas en mercados din&aacute;micos con informaci&oacute;n realista de las industrias
+        chilenas. 12 industrias, 6 m&oacute;dulos funcionales, consecuencias medibles.
+        Desarrollo 100% chileno.
+      </p>
+      <a href="#que-es" class="p-boton">Conocer m&aacute;s <span>&rarr;</span></a>
+    </div>
+    <div class="p-hero-logo">
+      <img src="img/icon.png" alt="CTRL ENTROPICO">
+    </div>
+  </div>
+</section>
+
+<!-- GALERÍA CIVILIZACIONES -->
+<section class="p-galeria">
+  <div class="in">
+    <div class="galeria-strip">
+      <img src="img/landing/coliseo.png" alt="Coliseo">
+      <img src="img/landing/piramides.png" alt="Pir&aacute;mides">
+      <img src="img/landing/muralla.png" alt="Gran Muralla">
+      <img src="img/landing/acueducto.png" alt="Acueducto">
+      <img src="img/landing/notredame.png" alt="Notre-Dame">
+    </div>
+  </div>
+</section>
+
+<!-- PROPUESTA + LOGIN -->
+<section class="p-propuesta" id="que-es">
+  <div class="in">
+    <div class="p-izq">
+      <div class="p-rotulo oscuro">Nuestra propuesta</div>
+      <h2>Administrar es controlar la entrop&iacute;a</h2>
+      <p class="p-parrafo">
+        Toda organizaci&oacute;n tiende al desorden: los costos suben, la demanda fluct&uacute;a,
+        los competidores atacan, los empleados rotan, las regulaciones cambian, los proveedores fallan.
+        El trabajo de un gerente consiste en tomar decisiones que impongan orden sobre ese caos.
+      </p>
+      <p class="p-parrafo">
+        CTRL ENTROPICO es un sistema de simulaci&oacute;n empresarial dise&ntilde;ado para que los
+        futuros profesionales adquieran competencias de gesti&oacute;n durante su formaci&oacute;n.
+        Los equipos compiten en mercados simulados donde cada per&iacute;odo trae nueva incertidumbre;
+        la plataforma no les dice qu&eacute; decidir, les da informaci&oacute;n incompleta,
+        se&ntilde;ales ambiguas y consecuencias reales.
+      </p>
+      <p class="p-parrafo" style="font-weight:500;color:var(--navy)">
+        Un desarrollo 100% chileno, realista, dise&ntilde;ado para formar a los l&iacute;deres
+        de las organizaciones que el desarrollo del pa&iacute;s necesita.
+      </p>
+
+      <div class="pilares">
+        <div class="pilar">
+          <div class="ico"><img src="img/landing/piramides.png" alt=""></div>
+          <b>Modular</b>
+          <p>De 1 a 6 m&oacute;dulos activos seg&uacute;n el curso</p>
+        </div>
+        <div class="pilar">
+          <div class="ico"><img src="img/landing/muralla.png" alt=""></div>
+          <b>Colaborativo</b>
+          <p>Equipos de 1 a 7 con roles gerenciales reales</p>
+        </div>
+        <div class="pilar">
+          <div class="ico"><img src="img/landing/acueducto.png" alt=""></div>
+          <b>Multi-industria</b>
+          <p>12 industrias con datos del mercado chileno</p>
         </div>
       </div>
-    </header>
-    <div class="contenedor-sm" style="padding-top:2rem;padding-bottom:2rem">
-      <div class="card">
-        <h2 class="mb-2">Completa tu registro</h2>
-        <p class="text-secondary mb-3">Estos datos se usar&aacute;n para tu credencial y para identificarte en el sistema.</p>
-        <form id="form-registro" onsubmit="return false">
-          <div class="flex gap-2">
-            <div class="form-grupo" style="flex:1"><label class="form-label">Primer nombre *</label><input type="text" id="reg-nombre" class="form-input" required></div>
-            <div class="form-grupo" style="flex:1"><label class="form-label">Segundo nombre</label><input type="text" id="reg-nombre2" class="form-input"></div>
-          </div>
-          <div class="flex gap-2">
-            <div class="form-grupo" style="flex:1"><label class="form-label">Apellido paterno *</label><input type="text" id="reg-apellido1" class="form-input" required></div>
-            <div class="form-grupo" style="flex:1"><label class="form-label">Apellido materno</label><input type="text" id="reg-apellido2" class="form-input"></div>
-          </div>
-          <div class="form-grupo"><label class="form-label">Correo institucional</label><input type="email" id="reg-email-inst" class="form-input" placeholder="tu.nombre@universidad.cl"><p class="form-hint">El correo de tu universidad</p></div>
-          <div class="form-grupo"><label class="form-label">Correo personal</label><input type="email" id="reg-email-pers" class="form-input" placeholder="tu.correo@gmail.com"><p class="form-hint">Podr&aacute;s ingresar con cualquiera de los dos</p></div>
-          <div class="form-grupo"><label class="form-label">Carrera</label><input type="text" id="reg-carrera" class="form-input"></div>
-          <div class="form-grupo">
-            <label class="form-label">Fotograf&iacute;a *</label>
-            <div class="flex items-center gap-3 mb-2">
-              <div style="width:72px;height:72px;border-radius:50%;background:var(--border-light);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center">
-                <img id="reg-foto-img" src="" alt="" style="width:100%;height:100%;object-fit:cover;display:none">
-                <span id="reg-foto-placeholder" class="text-light text-xs">Foto</span>
-              </div>
-              <div>
-                <input type="file" id="reg-foto-input" accept="image/*" class="form-input" style="padding:0.4rem;font-size:0.85rem">
-                <button type="button" id="btn-usar-foto-google" class="btn btn-sm btn-outline mt-1 oculto" onclick="usarFotoGoogle()">Usar mi foto de Google</button>
-              </div>
-            </div>
-          </div>
-          <input type="hidden" id="reg-curso-id"><input type="hidden" id="reg-foto-url">
-          <div id="reg-error" class="alerta alerta-error oculto"></div>
-          <button type="submit" class="btn btn-primary btn-lg" onclick="enviarRegistro()" style="width:100%">Registrarme</button>
-        </form>
+    </div>
+
+    <!-- CAJA ACCESO -->
+    <div class="p-acceso" id="acceso">
+      <div class="marca" style="display:flex;align-items:center">
+        <img src="img/icon.png" alt="" style="height:28px;width:28px;border-radius:7px">
+        <span class="word">CTRL <em>ENTROPICO</em></span>
+      </div>
+      <h3>Inicia sesi&oacute;n</h3>
+      <p class="p-sub">Accede con tu cuenta Google institucional o personal.</p>
+      <button class="btn-google" id="btn-google">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A10.96 10.96 0 0 0 1 12c0 1.77.42 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+        Continuar con Google
+      </button>
+      <div class="p-sep">o</div>
+      <button class="p-entrar" id="btn-install-caja">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 17v2a2 2 0 002 2h10a2 2 0 002-2v-2"/></svg>
+        Instalar como aplicaci&oacute;n
+      </button>
+      <p class="p-nota">Disponible para Android, iOS y escritorio.</p>
+    </div>
+  </div>
+</section>
+
+<!-- MÓDULOS -->
+<section class="p-modulos" id="modulos">
+  <div class="in">
+    <div>
+      <div class="p-rotulo oscuro">Plataforma</div>
+      <h2>6 m&oacute;dulos. <em>Una plataforma.</em></h2>
+      <p class="modulos-intro">
+        El sistema es modular: cada &aacute;rea funcional se activa o desactiva seg&uacute;n el curso.
+        Un solo sistema sirve para toda la l&iacute;nea curricular. Cada m&oacute;dulo tiene nivel
+        b&aacute;sico, avanzado y, en Log&iacute;stica, especializado con herramientas de ingenier&iacute;a.
+      </p>
+    </div>
+    <div class="modulos-grid">
+      <div class="mod-card">
+        <div class="mod-borde" style="background:var(--orange)"></div>
+        <span class="mod-num">M&oacute;dulo 01</span>
+        <h3>Marketing y Comercial</h3>
+        <p>Precio, canales, marca, comunicaci&oacute;n, fuerza de ventas e investigaci&oacute;n de mercado. Fase de dise&ntilde;o estrat&eacute;gico: nombre de marca, posicionamiento, portafolio de SKU.</p>
+        <span class="mod-tag">22 decisiones</span>
+      </div>
+      <div class="mod-card">
+        <div class="mod-borde" style="background:var(--blue)"></div>
+        <span class="mod-num">M&oacute;dulo 02</span>
+        <h3>Finanzas</h3>
+        <p>Estructura de capital, financiamiento CP y LP, pol&iacute;tica de dividendos, CAPEX, cobertura cambiaria, inversiones, valoraci&oacute;n DCF y calificaci&oacute;n crediticia.</p>
+        <span class="mod-tag">20 decisiones</span>
+      </div>
+      <div class="mod-card">
+        <div class="mod-borde" style="background:var(--turquesa)"></div>
+        <span class="mod-num">M&oacute;dulo 03</span>
+        <h3>Log&iacute;stica y Operaciones</h3>
+        <p>Cadena de suministro completa. En nivel especializado: dise&ntilde;o de CD con editor visual, TMS, rutas, proyectos con business case.</p>
+        <span class="mod-tag">21 a 40+ decisiones</span>
+      </div>
+      <div class="mod-card">
+        <div class="mod-borde" style="background:#7C3AED"></div>
+        <span class="mod-num">M&oacute;dulo 04</span>
+        <h3>Recursos Humanos</h3>
+        <p>Capital humano transversal. Ajustes salariales, capacitaci&oacute;n, bienestar, negociaci&oacute;n colectiva. Genera el multiplicador de productividad que afecta a todos los m&oacute;dulos.</p>
+        <span class="mod-tag">21 decisiones</span>
+      </div>
+      <div class="mod-card">
+        <div class="mod-borde" style="background:#D97706"></div>
+        <span class="mod-num">M&oacute;dulo 05</span>
+        <h3>Contabilidad</h3>
+        <p>Registro de asientos contables por per&iacute;odo. El sistema compara contra movimientos reales del motor: errores de clasificaci&oacute;n, monto, omisi&oacute;n, registro ficticio.</p>
+        <span class="mod-tag">18 a 22 asientos</span>
+      </div>
+      <div class="mod-card">
+        <div class="mod-borde" style="background:#DC2626"></div>
+        <span class="mod-num">M&oacute;dulo 06</span>
+        <h3>Auditor&iacute;a</h3>
+        <p>Rol diferenciado: el equipo auditor examina empresas de otros equipos. 15 tipos de error, 5 controles internos, opini&oacute;n, informe y seguimiento.</p>
+        <span class="mod-tag">20 acciones</span>
       </div>
     </div>
   </div>
+</section>
 
-  <!-- APP PRINCIPAL -->
-  <div id="pantalla-app" class="oculto">
-    <header class="header">
-      <div class="header-inner">
-        <div class="header-logo">
-          <img src="img/icon.png" alt="">
-          <div><div class="marca">CTRL <span>ENTROPICO</span></div><div class="header-institucion" id="app-institucion"></div></div>
-        </div>
-        <div class="header-usuario">
-          <span class="nombre" id="app-nombre-usuario"></span>
-          <img id="app-foto-usuario" src="" alt="" style="width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,255,255,0.3)">
-          <button class="btn btn-sm btn-outline" style="color:white;border-color:rgba(255,255,255,0.3)" onclick="Auth.logout()">Salir</button>
+<!-- CARACTERÍSTICAS -->
+<section class="p-caract" id="caracteristicas">
+  <div class="in">
+    <div>
+      <div class="p-rotulo oscuro">Caracter&iacute;sticas</div>
+      <h2>Dise&ntilde;ado para <em>formar l&iacute;deres</em></h2>
+    </div>
+    <div class="caract-grid">
+      <div class="caract-item">
+        <div class="c-img"><img src="img/landing/coliseo.png" alt=""></div>
+        <div>
+          <h4>Simulaci&oacute;n empresarial completa</h4>
+          <p>Los equipos dirigen empresas reales en mercados competitivos. Cada decisi&oacute;n tiene consecuencias medibles en ingresos, costos, participaci&oacute;n de mercado y flujo de caja.</p>
         </div>
       </div>
-    </header>
-    <main class="contenedor" style="padding-top:2rem;padding-bottom:2rem"><div id="app-contenido"></div></main>
+      <div class="caract-item">
+        <div class="c-img"><img src="img/landing/piramides.png" alt=""></div>
+        <div>
+          <h4>Desarrollo 100% chileno</h4>
+          <p>Magnitudes, canales de distribuci&oacute;n, geograf&iacute;a, regulaciones y estructura de costos basados en datos reales del mercado y de las industrias nacionales.</p>
+        </div>
+      </div>
+      <div class="caract-item">
+        <div class="c-img"><img src="img/landing/muralla.png" alt=""></div>
+        <div>
+          <h4>Organigrama real</h4>
+          <p>Cada empresa tiene Gerente General y subgerencias con cargos, sueldos y funciones reales. De 1 a 7 integrantes; los roles se asignan autom&aacute;ticamente seg&uacute;n el tama&ntilde;o del equipo.</p>
+        </div>
+      </div>
+      <div class="caract-item">
+        <div class="c-img"><img src="img/landing/acueducto.png" alt=""></div>
+        <div>
+          <h4>Configurable por el acad&eacute;mico</h4>
+          <p>Nivel de cada m&oacute;dulo (b&aacute;sico, avanzado, especializado), pesos de evaluaci&oacute;n, notificaciones, momentos evaluativos, logo institucional: todo parametrizable por curso.</p>
+        </div>
+      </div>
+      <div class="caract-item">
+        <div class="c-img"><img src="img/landing/notredame.png" alt=""></div>
+        <div>
+          <h4>Evaluaci&oacute;n integrada</h4>
+          <p>Simulador + nota acad&eacute;mica + heteroevaluaci&oacute;n + autoevaluaci&oacute;n. Pesos configurables. Bit&aacute;cora de equipo, memorando ejecutivo, retroalimentaci&oacute;n por pares.</p>
+        </div>
+      </div>
+      <div class="caract-item">
+        <div class="c-img"><img src="img/industrias/banca.png" alt=""></div>
+        <div>
+          <h4>Un m&oacute;dulo, todo funciona</h4>
+          <p>Con un solo m&oacute;dulo activo, los dem&aacute;s pasan a modo autom&aacute;tico. La competencia se define 100% por el m&oacute;dulo activo. Ideal para cursos focalizados.</p>
+        </div>
+      </div>
+    </div>
   </div>
+</section>
 
-  <script src="js/auth.js"></script>
-  <script src="js/api.js"></script>
-  <script src="js/decisiones.js"></script>
-  <script src="js/app.js"></script>
-  <script>
-    API.configurar('URL_DE_LA_WEB_APP_AQUI');
-    const params=new URLSearchParams(window.location.search);
-    const cursoIdUrl=params.get('curso');
+<!-- INDUSTRIAS (alfab&eacute;tico) -->
+<section class="p-industrias" id="industrias">
+  <div class="in">
+    <div>
+      <div class="p-rotulo oscuro">Multi-industria</div>
+      <h2>12 industrias. <em>Tu mercado.</em></h2>
+      <p class="intro">
+        Informaci&oacute;n realista del mercado chileno: magnitudes, canales de distribuci&oacute;n,
+        geograf&iacute;a, estructura de costos y din&aacute;mica competitiva basados en datos reales
+        de cada industria.
+      </p>
+    </div>
+    <div class="ind-grid">
+      <div class="ind-card">
+        <div class="ind-img"><img src="img/industrias/agricola.png" alt=""></div>
+        <div class="ind-info"><b>Agr&iacute;cola y Forestal</b><small>Exportaci&oacute;n, estacionalidad, cadena productiva</small></div>
+      </div>
+      <div class="ind-card">
+        <div class="ind-img"><img src="img/industrias/banca.png" alt=""></div>
+        <div class="ind-info"><b>Banca</b><small>Cr&eacute;ditos, inversiones, regulaci&oacute;n financiera</small></div>
+      </div>
+      <div class="ind-card">
+        <div class="ind-img"><img src="img/industrias/bebidas.png" alt=""></div>
+        <div class="ind-info"><b>Bebidas</b><small>Planta, embotellado, cadena de fr&iacute;o, flota</small></div>
+      </div>
+      <div class="ind-card">
+        <div class="ind-img"><img src="img/industrias/construccion.png" alt=""></div>
+        <div class="ind-info"><b>Construcci&oacute;n</b><small>Proyectos, licitaciones, subcontratos</small></div>
+      </div>
+      <div class="ind-card">
+        <div class="ind-img"><img src="img/industrias/consumo-masivo.png" alt=""></div>
+        <div class="ind-info"><b>Consumo Masivo</b><small>Retail, distribuidores, cobertura nacional</small></div>
+      </div>
+      <div class="ind-card">
+        <div class="ind-img"><img src="img/industrias/energia.png" alt=""></div>
+        <div class="ind-info"><b>Energ&iacute;a</b><small>Generaci&oacute;n, transmisi&oacute;n, renovables</small></div>
+      </div>
+      <div class="ind-card">
+        <div class="ind-img"><img src="img/industrias/farmaceutica.png" alt=""></div>
+        <div class="ind-info"><b>Farmac&eacute;utica</b><small>Cadena de fr&iacute;o, regulaci&oacute;n, licitaciones</small></div>
+      </div>
+      <div class="ind-card">
+        <div class="ind-img"><img src="img/industrias/manufactura.png" alt=""></div>
+        <div class="ind-info"><b>Manufactura</b><small>Producci&oacute;n, calidad, automatizaci&oacute;n</small></div>
+      </div>
+      <div class="ind-card">
+        <div class="ind-img"><img src="img/industrias/mineria.png" alt=""></div>
+        <div class="ind-info"><b>Miner&iacute;a</b><small>Extracci&oacute;n, procesamiento, exportaci&oacute;n</small></div>
+      </div>
+      <div class="ind-card">
+        <div class="ind-img"><img src="img/industrias/retail.png" alt=""></div>
+        <div class="ind-info"><b>Retail</b><small>Tiendas, e-commerce, omnicanalidad</small></div>
+      </div>
+      <div class="ind-card">
+        <div class="ind-img"><img src="img/industrias/telecomunicaciones.png" alt=""></div>
+        <div class="ind-info"><b>Telecomunicaciones</b><small>Red, planes, fidelizaci&oacute;n, regulaci&oacute;n</small></div>
+      </div>
+      <div class="ind-card">
+        <div class="ind-img"><img src="img/industrias/transporte.png" alt=""></div>
+        <div class="ind-info"><b>Transporte y Log&iacute;stica</b><small>Puertos, flota, almacenamiento, 3PL</small></div>
+      </div>
+    </div>
+  </div>
+</section>
 
-    Auth.init({
-      onLogin:async function(usuario){
-        mostrarPantalla('pantalla-carga');
-        const resp=await API.miPerfil();
-        if(!resp.ok){mostrarPantalla('pantalla-login');Auth.mostrarBotonLogin('btn-google');return;}
-        const perfil=resp.data;
-        if(!perfil.registrado){prepararRegistro(usuario,perfil);mostrarPantalla('pantalla-registro');}
-        else if(perfil.rol==='academico'){window.location.href='admin.html';}
-        else{cargarApp(perfil);mostrarPantalla('pantalla-app');}
-      },
-      onLogout:function(){mostrarPantalla('pantalla-login');Auth.mostrarBotonLogin('btn-google');}
-    });
+<!-- CITA -->
+<section class="p-cita">
+  <div class="in">
+    <blockquote>
+      <p>&ldquo;En los negocios, como en la termodin&aacute;mica, la entrop&iacute;a solo se gestiona, nunca se elimina. Administrar es exactamente eso: imponer orden sobre el caos.&rdquo;</p>
+      <cite>CTRL ENTROPICO</cite>
+    </blockquote>
+  </div>
+</section>
 
-    setTimeout(function(){
-      document.getElementById('velo-carga').classList.add('oculto');
-      if(!Auth.estaLogueado()){mostrarPantalla('pantalla-login');Auth.mostrarBotonLogin('btn-google');}
-    },1500);
+<!-- CONTACTO -->
+<section class="p-contacto" id="contacto">
+  <div class="in">
+    <div class="contacto-info">
+      <div class="p-rotulo oscuro">Contacto</div>
+      <h2>Lleva CTRL ENTROPICO a <em>tu instituci&oacute;n</em></h2>
+      <p>
+        Si quieres implementar CTRL ENTROPICO en tu escuela de negocios, facultad o programa de
+        formaci&oacute;n ejecutiva, escr&iacute;benos. Configuramos el sistema seg&uacute;n tu
+        malla curricular, tus industrias de inter&eacute;s y los m&oacute;dulos que necesites.
+      </p>
+      <div class="contacto-dato">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        leyton.johns@gmail.com
+      </div>
+      <div class="contacto-dato">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+        linkedin.com/in/luis-leyton-johns
+      </div>
+      <div class="contacto-dato">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Chile
+      </div>
+    </div>
 
-    function mostrarPantalla(id){
-      document.getElementById('velo-carga').classList.add('oculto');
-      ['pantalla-login','pantalla-carga','pantalla-registro','pantalla-app'].forEach(function(p){
-        document.getElementById(p).classList.toggle('oculto',p!==id);
-      });
-    }
+    <form class="contacto-form" id="form-contacto" onsubmit="enviarContacto(event)">
+      <div class="campo">
+        <label>Nombre</label>
+        <input type="text" name="nombre" required placeholder="Tu nombre completo">
+      </div>
+      <div class="campo">
+        <label>Correo electr&oacute;nico</label>
+        <input type="email" name="email" required placeholder="correo@institucion.cl">
+      </div>
+      <div class="campo">
+        <label>Instituci&oacute;n</label>
+        <input type="text" name="institucion" placeholder="Universidad, escuela o empresa">
+      </div>
+      <div class="campo">
+        <label>Asunto</label>
+        <select name="asunto">
+          <option value="Implementaci&oacute;n">Implementar CTRL ENTROPICO</option>
+          <option value="Demo">Solicitar una demo</option>
+          <option value="Informaci&oacute;n">Informaci&oacute;n general</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label>Mensaje</label>
+        <textarea name="mensaje" required placeholder="Cu&eacute;ntanos en qu&eacute; podemos ayudarte"></textarea>
+      </div>
+      <button type="submit" class="btn-enviar">Enviar mensaje</button>
+      <div class="form-ok" id="form-ok">Mensaje enviado. Te contactaremos pronto.</div>
+    </form>
+  </div>
+</section>
 
-    function prepararRegistro(usuario){
-      if(usuario.nombre){
-        const p=usuario.nombre.split(' ');
-        document.getElementById('reg-nombre').value=p[0]||'';
-        if(p.length>=3){document.getElementById('reg-apellido1').value=p[p.length-2]||'';document.getElementById('reg-apellido2').value=p[p.length-1]||'';}
-        else if(p.length===2){document.getElementById('reg-apellido1').value=p[1]||'';}
-      }
-      const email=usuario.email;
-      if(email.match(/(\.edu|\.cl|\.ac\.)/)){document.getElementById('reg-email-inst').value=email;}
-      else{document.getElementById('reg-email-pers').value=email;}
-      if(usuario.foto){document.getElementById('btn-usar-foto-google').classList.remove('oculto');}
-      document.getElementById('reg-curso-id').value=cursoIdUrl||'';
-    }
+<!-- FOOTER -->
+<footer class="p-footer">
+  <div class="in">
+    <div class="f-izq">
+      <a href="#" class="marca">
+        <img src="img/icon.png" alt="" style="height:26px;width:26px;border-radius:7px">
+        <span class="word">CTRL <em>ENTROPICO</em></span>
+      </a>
+      <span class="lema">Decide &middot; Compite &middot; Aprende &middot; Gestiona</span>
+    </div>
+    <div class="f-der">
+      <span class="autor">
+        Creado por <strong style="color:rgba(247,245,239,.7)">Luis Ernest Leyton Johns</strong> &middot;
+        ORCID <a href="https://orcid.org/0000-0002-4462-403X" target="_blank">0000-0002-4462-403X</a> &middot;
+        <a href="https://www.linkedin.com/in/luis-leyton-johns" target="_blank">linkedin.com/in/luis-leyton-johns</a>
+      </span>
+      <div class="f-links">
+        <a href="verificacion.html">Verificar certificado</a>
+      </div>
+      <span class="copy">&copy; 2026 CTRL ENTROPICO. Todos los derechos reservados. Desarrollado por Davinci Factory.</span>
+    </div>
+  </div>
+</footer>
 
-    function usarFotoGoogle(){
-      const foto=Auth.usuarioActual().foto;
-      if(foto){document.getElementById('reg-foto-url').value=foto;document.getElementById('reg-foto-img').src=foto;document.getElementById('reg-foto-img').style.display='block';document.getElementById('reg-foto-placeholder').style.display='none';}
-    }
+<div class="franja">
+  <i style="background:#1B2A4A"></i><i style="background:#2E5C8A"></i><i style="background:#E8600A"></i><i style="background:#2E5C8A"></i><i style="background:#1B2A4A"></i>
+</div>
 
-    document.getElementById('reg-foto-input').addEventListener('change',function(e){
-      const file=e.target.files[0];
-      if(file){const reader=new FileReader();reader.onload=function(ev){document.getElementById('reg-foto-url').value=ev.target.result;document.getElementById('reg-foto-img').src=ev.target.result;document.getElementById('reg-foto-img').style.display='block';document.getElementById('reg-foto-placeholder').style.display='none';};reader.readAsDataURL(file);}
-    });
+<script>
+// Formulario de contacto via Apps Script
+async function enviarContacto(e){
+  e.preventDefault();
+  const form=e.target;
+  const btn=form.querySelector('.btn-enviar');
+  btn.disabled=true;btn.textContent='Enviando...';
+  const datos={
+    nombre:form.nombre.value,
+    email:form.email.value,
+    institucion:form.institucion.value,
+    asunto:form.asunto.value,
+    mensaje:form.mensaje.value
+  };
+  try{
+    // URL del Apps Script que reenvía a ambos Gmail
+    const url='URL_APPS_SCRIPT_CONTACTO';
+    await fetch(url,{method:'POST',body:JSON.stringify(datos),headers:{'Content-Type':'text/plain'}});
+    document.getElementById('form-ok').style.display='block';
+    form.reset();
+  }catch(err){
+    alert('Error al enviar. Intenta nuevamente.');
+  }
+  btn.disabled=false;btn.textContent='Enviar mensaje';
+}
+</script>
 
-    async function enviarRegistro(){
-      const err=document.getElementById('reg-error');err.classList.add('oculto');
-      const d={cursoId:document.getElementById('reg-curso-id').value,nombre:document.getElementById('reg-nombre').value.trim(),apellido1:document.getElementById('reg-apellido1').value.trim(),apellido2:document.getElementById('reg-apellido2').value.trim(),correoInstitucional:document.getElementById('reg-email-inst').value.trim(),correoPersonal:document.getElementById('reg-email-pers').value.trim(),carrera:document.getElementById('reg-carrera').value.trim(),foto:document.getElementById('reg-foto-url').value};
-      if(!d.nombre||!d.apellido1){err.textContent='Nombre y primer apellido son obligatorios.';err.classList.remove('oculto');return;}
-      if(!d.foto){err.textContent='La fotografía es obligatoria para tu credencial.';err.classList.remove('oculto');return;}
-      const resp=await API.registrar(d);
-      if(!resp.ok){err.textContent=resp.error;err.classList.remove('oculto');return;}
-      window.location.reload();
-    }
-
-    function cargarApp(perfil){
-      document.getElementById('app-nombre-usuario').textContent=perfil.nombre;
-      document.getElementById('app-foto-usuario').src=perfil.foto||'';
-      if(perfil.institucion){const i=perfil.institucion;document.getElementById('app-institucion').textContent=(i.sigla?i.sigla+' — ':'')+i.cursoNombre;}
-      App.init(perfil);
-    }
-  </script>
 </body>
 </html>
