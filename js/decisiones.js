@@ -222,18 +222,24 @@ const Decisiones = (function() {
     html += '<div style="width:200px;flex-shrink:0">';
 
     if (v.esSeleccion) {
-      // Selector (dropdown) para variables de selección
+      // Selector (dropdown) con opciones reales desde el Motor
       html += '<select class="form-input" ';
       html += 'id="dec-' + modulo + '-' + v.id + '" ';
       html += 'data-modulo="' + modulo + '" data-variable="' + v.id + '" ';
       html += 'onchange="Decisiones.guardarVariable(\'' + modulo + '\',\'' + v.id + '\')" ';
       html += 'style="font-size:0.9rem">';
       html += '<option value="">Seleccionar...</option>';
-      // Las opciones se cargarían del motor; por ahora placeholder genérico
-      html += '<option value="opcion_1"' + (valorActual === 'opcion_1' ? ' selected' : '') + '>Opción 1</option>';
-      html += '<option value="opcion_2"' + (valorActual === 'opcion_2' ? ' selected' : '') + '>Opción 2</option>';
-      html += '<option value="opcion_3"' + (valorActual === 'opcion_3' ? ' selected' : '') + '>Opción 3</option>';
+      if (v.opciones && v.opciones.length > 0) {
+        v.opciones.forEach(function(opt) {
+          var sel = (valorActual === opt.id) ? ' selected' : '';
+          html += '<option value="' + opt.id + '"' + sel + ' title="' + (opt.descripcion || '') + '">' + opt.nombre + '</option>';
+        });
+      }
       html += '</select>';
+      // Mostrar descripción de la opción seleccionada
+      if (v.opciones && v.opciones.length > 0) {
+        html += '<p id="desc-' + modulo + '-' + v.id + '" class="text-xs text-light mt-1" style="max-width:200px"></p>';
+      }
     } else {
       // Input numérico
       const step = calcularStep_(v);
