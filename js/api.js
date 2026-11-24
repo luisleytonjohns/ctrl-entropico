@@ -31,9 +31,9 @@ const API = (function() {
     try {
       const resp = await fetch(BASE_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain' }, // Apps Script no acepta application/json en CORS
+        headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify(datos),
-        redirect: 'follow' // Apps Script redirige en doPost
+        redirect: 'follow'
       });
 
       if (!resp.ok) {
@@ -59,7 +59,7 @@ const API = (function() {
   }
 
   // ══════════════════════════════════════════════════
-  // REGISTRO Y PERFIL
+  // ATAJOS: REGISTRO Y PERFIL
   // ══════════════════════════════════════════════════
 
   async function miPerfil() { return llamar('miPerfil'); }
@@ -67,7 +67,7 @@ const API = (function() {
   async function actualizarPerfil(datos) { return llamar('actualizarPerfil', datos); }
 
   // ══════════════════════════════════════════════════
-  // EQUIPOS
+  // ATAJOS: EQUIPOS
   // ══════════════════════════════════════════════════
 
   async function crearEquipo(datos) { return llamar('crearEquipo', datos); }
@@ -76,70 +76,60 @@ const API = (function() {
   async function listarEquipos(cursoId) { return llamar('listarEquipos', { cursoId: cursoId }); }
 
   // ══════════════════════════════════════════════════
-  // DECISIONES
+  // ATAJOS: DECISIONES
   // ══════════════════════════════════════════════════
 
+  async function catalogoVariables() { return llamar('catalogoVariables'); }
   async function guardarDecision(datos) { return llamar('guardarDecision', datos); }
   async function misDecisiones(periodo) { return llamar('misDecisiones', { periodo: periodo }); }
   async function enviarDefinitiva(periodo) { return llamar('enviarDefinitiva', { periodo: periodo }); }
 
   // ══════════════════════════════════════════════════
-  // RESULTADOS
+  // ATAJOS: RESULTADOS E INFORMES
   // ══════════════════════════════════════════════════
 
   async function misResultados(periodo) { return llamar('misResultados', { periodo: periodo }); }
   async function ranking(periodo) { return llamar('ranking', { periodo: periodo }); }
-
-  // ══════════════════════════════════════════════════
-  // INFORMES DE MERCADO
-  // ══════════════════════════════════════════════════
-
   async function comprarInforme(informeId) { return llamar('comprarInforme', { informeId: informeId }); }
-  async function misInformes() { return llamar('misInformes'); }
 
   // ══════════════════════════════════════════════════
-  // INDUCCIÓN Y MATERIALES
+  // ATAJOS: INDUCCIÓN Y MATERIALES
   // ══════════════════════════════════════════════════
 
   async function estadoInduccion() { return llamar('estadoInduccion'); }
-  async function contenidoLectura(materialId) { return llamar('contenidoLectura', { materialId: materialId }); }
-  async function registrarPagina(materialId, pagina) { return llamar('registrarPagina', { materialId: materialId, pagina: pagina }); }
-  async function responderControl(materialId, respuestas) { return llamar('responderControl', { materialId: materialId, respuestas: respuestas }); }
-  async function listarMateriales(fase) { return llamar('listarMateriales', { fase: fase || 'todos' }); }
-  async function descargarMaterial(materialId) { return llamar('descargarMaterial', { materialId: materialId }); }
+  async function contenidoLectura(datos) { return llamar('contenidoLectura', datos); }
+  async function registrarPagina(datos) { return llamar('registrarPagina', datos); }
+  async function responderControl(datos) { return llamar('responderControl', datos); }
+  async function listarMateriales() { return llamar('listarMateriales'); }
+  async function descargarMaterial(datos) { return llamar('descargarMaterial', datos); }
 
   // ══════════════════════════════════════════════════
-  // CALIFICACIONES
+  // ATAJOS: CALIFICACIONES
   // ══════════════════════════════════════════════════
 
   async function misCalificaciones() { return llamar('misCalificaciones'); }
 
   // ══════════════════════════════════════════════════
-  // CIERRE PROGRAMADO (ADMIN)
-  // ══════════════════════════════════════════════════
-
-  async function configurarCierre(datos) { return llamar('configurarCierre', datos); }
-  async function estadoCierre(cursoId) { return llamar('estadoCierre', { cursoId: cursoId }); }
-
-  // ══════════════════════════════════════════════════
-  // ADMIN
+  // ATAJOS: ADMIN / ACADÉMICO
   // ══════════════════════════════════════════════════
 
   async function panelAcademico() { return llamar('panelAcademico'); }
   async function crearCurso(datos) { return llamar('crearCurso', datos); }
   async function configurarCurso(datos) { return llamar('configurarCurso', datos); }
-  async function listarEstudiantes(cursoId, filtro) { return llamar('listarEstudiantes', { cursoId: cursoId, filtro: filtro }); }
+  async function listarEstudiantes(cursoId) { return llamar('listarEstudiantes', { cursoId: cursoId }); }
   async function asignarEquipo(datos) { return llamar('asignarEquipo', datos); }
-  async function abrirSala(cursoId) { return llamar('abrirSala', { cursoId: cursoId }); }
-  async function cerrarSala(cursoId, forzar) { return llamar('cerrarSala', { cursoId: cursoId, forzar: forzar }); }
-  async function procesarPeriodo(cursoId) { return llamar('procesarPeriodo', { cursoId: cursoId }); }
-  async function publicarResultados(cursoId) { return llamar('publicarResultados', { cursoId: cursoId }); }
+  async function abrirSala() { return llamar('abrirSala'); }
+  async function cerrarSala() { return llamar('cerrarSala'); }
+  async function procesarPeriodo() { return llamar('procesarPeriodo'); }
+  async function publicarResultados() { return llamar('publicarResultados'); }
+  async function configurarCierre(datos) { return llamar('configurarCierre', datos); }
+  async function estadoCierre() { return llamar('estadoCierre'); }
 
   return {
     configurar: configurar,
     llamar: llamar,
     ping: ping,
-    // Registro y perfil
+    // Registro
     miPerfil: miPerfil,
     registrar: registrar,
     actualizarPerfil: actualizarPerfil,
@@ -149,16 +139,15 @@ const API = (function() {
     miEquipo: miEquipo,
     listarEquipos: listarEquipos,
     // Decisiones
+    catalogoVariables: catalogoVariables,
     guardarDecision: guardarDecision,
     misDecisiones: misDecisiones,
     enviarDefinitiva: enviarDefinitiva,
     // Resultados
     misResultados: misResultados,
     ranking: ranking,
-    // Informes
     comprarInforme: comprarInforme,
-    misInformes: misInformes,
-    // Inducción y materiales
+    // Inducción
     estadoInduccion: estadoInduccion,
     contenidoLectura: contenidoLectura,
     registrarPagina: registrarPagina,
@@ -167,9 +156,6 @@ const API = (function() {
     descargarMaterial: descargarMaterial,
     // Calificaciones
     misCalificaciones: misCalificaciones,
-    // Cierre programado
-    configurarCierre: configurarCierre,
-    estadoCierre: estadoCierre,
     // Admin
     panelAcademico: panelAcademico,
     crearCurso: crearCurso,
@@ -179,7 +165,9 @@ const API = (function() {
     abrirSala: abrirSala,
     cerrarSala: cerrarSala,
     procesarPeriodo: procesarPeriodo,
-    publicarResultados: publicarResultados
+    publicarResultados: publicarResultados,
+    configurarCierre: configurarCierre,
+    estadoCierre: estadoCierre
   };
 
 })();

@@ -1,17 +1,51 @@
 /**
  * CTRL ENTROPICO — decisiones.js
  * Sala de decisiones del estudiante.
- * Renderiza las variables por módulo y categoría,
- * con validación de presupuesto en tiempo real.
- *
- * Las variables se envían al backend con { modulo, variable, valor }.
- * Proceso.gs lee las decisiones como dec['modulo.variable'].
+ * Carga las variables dinámicamente desde la planilla Motor del curso
+ * (endpoint catalogoVariables) y las renderiza por módulo con tabs.
+ * Validación de presupuesto en tiempo real.
  */
 
 const Decisiones = (function() {
 
-  // Cache de variables para saber el módulo de cada una
-  let variablesCache_ = {};
+  // Caché local del catálogo (se pide una vez por sesión)
+  let _catalogo = null;
+
+  // Nombres de módulos para las tabs
+  const NOMBRES_MODULO = {
+    marketing:     'Marketing',
+    logistica:     'Logística',
+    rrhh:          'RRHH',
+    finanzas:      'Finanzas',
+    contabilidad:  'Contabilidad',
+    auditoria:     'Auditoría'
+  };
+
+  // Iconos por módulo
+  const ICONOS_MODULO = {
+    marketing:     '📊',
+    logistica:     '🚚',
+    rrhh:          '👥',
+    finanzas:      '💰',
+    contabilidad:  '📋',
+    auditoria:     '🔍'
+  };
+
+  /**
+   * Carga el catálogo de variables desde el backend (Motor de la industria).
+   * @returns {Promise<Object|null>}
+   */
+  async function cargarCatalogo() {
+    if (_catalogo) return _catalogo;
+
+    const resp = await API.catalogoVariables();
+    if (resp.ok) {
+      _catalogo = resp.data;
+      return _catalogo;
+    }
+    console.error('Error cargando catálogo:', resp.error);
+    return null;
+  }
 
   /**
    * Renderiza la sala de decisiones.
@@ -19,7 +53,7 @@ const Decisiones = (function() {
    * @param {Object} data - { periodo, decisiones, presupuesto, estado }
    * @param {Object} perfil - Perfil del usuario
    */
-  function render(contenedor, data, perfil) {
+  async function render(contenedor, data, perfil) {
     const periodo = data.periodo;
     const estado = data.estado;
 
@@ -28,84 +62,70 @@ const Decisiones = (function() {
       return;
     }
 
-    if (!perfil.estadoSimulacion.salaAbierta) {
+    if (!perfil.estadoSimulacion || !perfil.estadoSimulacion.salaAbierta) {
       contenedor.innerHTML = '<div class="alerta alerta-info">La sala de decisiones no está abierta. Espera las instrucciones del académico.</div>';
       return;
     }
 
+    // Cargar catálogo de la industria
+    contenedor.innerHTML = '<div class="text-center p-4"><div class="spinner"></div><p class="text-sm mt-2">Cargando variables de la industria...</p></div>';
+    const catalogo = await cargarCatalogo();
+
+    if (!catalogo) {
+      contenedor.innerHTML = '<div class="alerta alerta-error">No se pudo cargar el catálogo de variables. El curso puede no tener una industria asignada.</div>';
+      return;
+    }
+
+    const modulos = catalogo.modulos;
+    const nombresModulo = Object.keys(modulos);
+
+    if (nombresModulo.length === 0) {
+      contenedor.innerHTML = '<div class="alerta alerta-info">No hay módulos activos en este curso.</div>';
+      return;
+    }
+
+    // ── Encabezado ──
     let html = '<div class="card">';
     html += '<div class="flex items-center justify-between mb-3">';
+    html += '<div>';
     html += '<h3 class="text-navy">Sala de decisiones — Período ' + periodo + '</h3>';
+    html += '<p class="text-xs text-light mt-1">Industria: ' + catalogo.industria + '</p>';
+    html += '</div>';
     html += '<div id="presupuesto-badge" class="badge badge-navy">Presupuesto: cargando...</div>';
     html += '</div>';
 
-    // Obtener módulos activos y sus variables
-    var modulosActivos = perfil.modulosActivos || ['marketing'];
-    var todasLasVariables = obtenerVariables_(modulosActivos);
-
-    // Guardar en cache para acceso rápido por ID
-    variablesCache_ = {};
-    todasLasVariables.forEach(function(v) { variablesCache_[v.id] = v; });
-
-    // Agrupar por módulo y categoría
-    var porModulo = {};
-    todasLasVariables.forEach(function(v) {
-      if (!porModulo[v.modulo]) porModulo[v.modulo] = {};
-      if (!porModulo[v.modulo][v.categoria]) porModulo[v.modulo][v.categoria] = [];
-      porModulo[v.modulo][v.categoria].push(v);
+    // ── Tabs de módulos ──
+    html += '<div class="tabs-modulo" style="display:flex;gap:4px;margin-bottom:1rem;border-bottom:2px solid var(--border-light);padding-bottom:0;overflow-x:auto">';
+    nombresModulo.forEach(function(mod, idx) {
+      const activo = idx === 0 ? ' tab-activo' : '';
+      html += '<button class="tab-modulo' + activo + '" data-modulo="' + mod + '" onclick="Decisiones.cambiarTab(\'' + mod + '\')" ';
+      html += 'style="padding:0.5rem 1rem;border:none;background:' + (idx === 0 ? 'var(--navy)' : 'transparent') + ';';
+      html += 'color:' + (idx === 0 ? '#fff' : 'var(--text-secondary)') + ';border-radius:6px 6px 0 0;cursor:pointer;font-size:0.85rem;white-space:nowrap">';
+      html += (ICONOS_MODULO[mod] || '') + ' ' + (NOMBRES_MODULO[mod] || mod);
+      html += '</button>';
     });
+    html += '</div>';
 
-    // Nombres de módulos para mostrar
-    var nombresModulos = {
-      marketing: 'Marketing', finanzas: 'Finanzas', logistica: 'Logística',
-      rrhh: 'Recursos Humanos', contabilidad: 'Contabilidad', auditoria: 'Auditoría'
-    };
+    // ── Paneles de cada módulo ──
+    nombresModulo.forEach(function(mod, idx) {
+      const visible = idx === 0 ? '' : ' style="display:none"';
+      html += '<div class="panel-modulo" id="panel-' + mod + '"' + visible + '>';
 
-    // Renderizar cada módulo
-    for (var modulo in porModulo) {
-      html += '<div class="mb-4">';
-      html += '<h3 style="color:var(--orange);font-size:1rem;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px">' + (nombresModulos[modulo] || modulo) + '</h3>';
-
-      for (var cat in porModulo[modulo]) {
-        html += '<div class="mb-3">';
-        html += '<h4 class="text-blue mb-2" style="border-bottom:2px solid var(--border-light);padding-bottom:0.5rem">' + cat + '</h4>';
-
-        porModulo[modulo][cat].forEach(function(v) {
-          var decModulo = data.decisiones[v.modulo] || {};
-          var valorActual = decModulo[v.id] ? decModulo[v.id].valor : '';
-
-          html += '<div class="flex items-center gap-2 mb-2" style="padding:0.5rem 0;border-bottom:1px solid var(--border-light)">';
-          html += '<div style="flex:1"><span class="font-semibold text-sm">' + v.nombre + '</span>';
-          html += '<br><span class="text-xs text-light">' + v.descripcion + '</span></div>';
-          html += '<div style="width:180px">';
-
-          if (v.tipo === 'numerico') {
-            html += '<input type="number" class="form-input" id="dec-' + v.id + '" value="' + (valorActual || '') + '" ';
-            html += 'min="' + v.min + '" max="' + v.max + '" step="' + (v.step || 1000000) + '" ';
-            html += 'onchange="Decisiones.guardarVariable(\'' + v.id + '\')" ';
-            html += 'style="text-align:right;font-size:0.9rem">';
-          } else if (v.tipo === 'selector') {
-            html += '<select class="form-input" id="dec-' + v.id + '" onchange="Decisiones.guardarVariable(\'' + v.id + '\')">';
-            html += '<option value="">Seleccionar</option>';
-            v.opciones.forEach(function(op) {
-              html += '<option value="' + op.valor + '"' + (valorActual == op.valor ? ' selected' : '') + '>' + op.texto + '</option>';
-            });
-            html += '</select>';
-          }
-
-          html += '</div>';
-          html += '<div id="estado-' + v.id + '" class="text-xs" style="width:60px;text-align:center"></div>';
-          html += '</div>';
+      const vars = modulos[mod];
+      if (!vars || vars.length === 0) {
+        html += '<p class="text-sm text-light">Sin variables en este módulo.</p>';
+      } else {
+        vars.forEach(function(v) {
+          const valorActual = obtenerValorGuardado_(data.decisiones, mod, v.id);
+          html += renderVariable_(mod, v, valorActual);
         });
-
-        html += '</div>';
       }
 
       html += '</div>';
-    }
+    });
 
-    // Botón de envío definitivo (solo Gerente General)
-    html += '<hr class="separador">';
+    // ── Botón de envío definitivo ──
+    html += '<hr class="separador" style="margin-top:1.5rem">';
     html += '<div class="flex items-center justify-between">';
     html += '<div id="mensaje-sala" class="text-sm"></div>';
 
@@ -125,17 +145,86 @@ const Decisiones = (function() {
   }
 
   /**
-   * Guarda una variable individual.
+   * Renderiza una variable individual.
+   */
+  function renderVariable_(modulo, v, valorActual) {
+    let html = '<div class="flex items-center gap-2 mb-2" style="padding:0.6rem 0;border-bottom:1px solid var(--border-light)">';
+
+    // Nombre y rango
+    html += '<div style="flex:1">';
+    html += '<span class="font-semibold text-sm">' + v.nombre + '</span>';
+    html += '<br><span class="text-xs text-light">';
+    html += formatearRango_(v);
+    if (v.esMonetaria) html += ' · <span style="color:var(--warning)">Presupuestaria</span>';
+    html += '</span></div>';
+
+    // Input
+    html += '<div style="width:200px">';
+    const step = calcularStep_(v);
+    const placeholder = v.defecto ? formatearValorCorto_(v, v.defecto) : '';
+
+    html += '<input type="number" class="form-input" ';
+    html += 'id="dec-' + modulo + '-' + v.id + '" ';
+    html += 'data-modulo="' + modulo + '" data-variable="' + v.id + '" ';
+    html += 'value="' + (valorActual !== null ? valorActual : '') + '" ';
+    html += 'min="' + v.min + '" max="' + v.max + '" step="' + step + '" ';
+    html += 'placeholder="' + placeholder + '" ';
+    html += 'onchange="Decisiones.guardarVariable(\'' + modulo + '\',\'' + v.id + '\')" ';
+    html += 'style="text-align:right;font-size:0.9rem">';
+    html += '</div>';
+
+    // Unidad
+    html += '<div class="text-xs text-light" style="width:70px">' + (v.unidad || '') + '</div>';
+
+    // Estado (check / error)
+    html += '<div id="estado-' + modulo + '-' + v.id + '" class="text-xs" style="width:30px;text-align:center"></div>';
+
+    html += '</div>';
+    return html;
+  }
+
+  /**
+   * Cambia la tab de módulo activa.
+   */
+  function cambiarTab(modulo) {
+    // Ocultar todos los paneles
+    document.querySelectorAll('.panel-modulo').forEach(function(p) {
+      p.style.display = 'none';
+    });
+
+    // Desactivar todas las tabs
+    document.querySelectorAll('.tab-modulo').forEach(function(t) {
+      t.style.background = 'transparent';
+      t.style.color = 'var(--text-secondary)';
+      t.classList.remove('tab-activo');
+    });
+
+    // Activar la seleccionada
+    const panel = document.getElementById('panel-' + modulo);
+    if (panel) panel.style.display = 'block';
+
+    const tab = document.querySelector('.tab-modulo[data-modulo="' + modulo + '"]');
+    if (tab) {
+      tab.style.background = 'var(--navy)';
+      tab.style.color = '#fff';
+      tab.classList.add('tab-activo');
+    }
+  }
+
+  /**
+   * Guarda una variable individual enviando el módulo correcto.
+   * @param {string} modulo
    * @param {string} variableId
    */
-  async function guardarVariable(variableId) {
-    const input = document.getElementById('dec-' + variableId);
-    const estadoDiv = document.getElementById('estado-' + variableId);
+  async function guardarVariable(modulo, variableId) {
+    const input = document.getElementById('dec-' + modulo + '-' + variableId);
+    const estadoDiv = document.getElementById('estado-' + modulo + '-' + variableId);
     const valor = input.value;
 
-    // Obtener el módulo de la variable desde el cache
-    var varDef = variablesCache_[variableId];
-    var modulo = varDef ? varDef.modulo : 'marketing';
+    if (!valor && valor !== '0') {
+      estadoDiv.innerHTML = '';
+      return;
+    }
 
     estadoDiv.innerHTML = '<div class="spinner" style="width:14px;height:14px"></div>';
 
@@ -148,9 +237,16 @@ const Decisiones = (function() {
     if (resp.ok) {
       estadoDiv.innerHTML = '<span style="color:var(--success)">&#10003;</span>';
       if (resp.data.presupuesto) actualizarPresupuesto_(resp.data.presupuesto);
+      // Limpiar mensaje de error previo
+      const msgDiv = document.getElementById('mensaje-sala');
+      if (msgDiv) msgDiv.innerHTML = '';
     } else {
       estadoDiv.innerHTML = '<span style="color:var(--error)">&#10007;</span>';
-      document.getElementById('mensaje-sala').innerHTML = '<span class="text-sm" style="color:var(--error)">' + resp.error + '</span>';
+      const msgDiv = document.getElementById('mensaje-sala');
+      if (msgDiv) msgDiv.innerHTML = '<span class="text-sm" style="color:var(--error)">' + resp.error + '</span>';
+      // Restaurar valor anterior si fue rechazado por rango o presupuesto
+      input.classList.add('input-error');
+      setTimeout(function() { input.classList.remove('input-error'); }, 2000);
     }
   }
 
@@ -171,6 +267,19 @@ const Decisiones = (function() {
     }
   }
 
+  // ══════════════════════════════════════════════════
+  // UTILIDADES INTERNAS
+  // ══════════════════════════════════════════════════
+
+  /**
+   * Busca el valor guardado de una variable en las decisiones del período.
+   */
+  function obtenerValorGuardado_(decisiones, modulo, variableId) {
+    if (!decisiones || !decisiones[modulo]) return null;
+    var d = decisiones[modulo][variableId];
+    return d ? d.valor : null;
+  }
+
   /**
    * Actualiza el badge de presupuesto.
    */
@@ -184,121 +293,74 @@ const Decisiones = (function() {
       badge.className = 'badge ' + color;
       badge.textContent = 'Presupuesto: ' + FrontUtils.moneda(presup.gastado) + ' / ' + FrontUtils.moneda(presup.asignado) + ' (' + pct + '%)';
     } else {
+      badge.className = 'badge badge-navy';
       badge.textContent = 'Gastado: ' + FrontUtils.moneda(presup.gastado);
     }
-  }
 
-  // ══════════════════════════════════════════════════
-  // CATÁLOGO DE VARIABLES POR MÓDULO
-  // ══════════════════════════════════════════════════
-  //
-  // Los IDs de las variables coinciden con lo que Proceso.gs
-  // lee como dec['modulo.variable']. El módulo se envía aparte.
-  //
-  // TODO: cargar desde la planilla Motor de la industria.
-  // ══════════════════════════════════════════════════
-
-  function obtenerVariables_(modulosActivos) {
-    var todas = [];
-
-    if (modulosActivos.indexOf('marketing') >= 0) {
-      todas = todas.concat(variablesMarketing_());
+    // Mostrar detalle por módulo si hay datos
+    if (presup.detallePorModulo) {
+      let detalle = '';
+      for (const mod in presup.detallePorModulo) {
+        detalle += (NOMBRES_MODULO[mod] || mod) + ': ' + FrontUtils.moneda(presup.detallePorModulo[mod]) + '  ';
+      }
+      badge.title = detalle;
     }
-    if (modulosActivos.indexOf('logistica') >= 0) {
-      todas = todas.concat(variablesLogistica_());
-    }
-    if (modulosActivos.indexOf('rrhh') >= 0) {
-      todas = todas.concat(variablesRRHH_());
-    }
-    if (modulosActivos.indexOf('finanzas') >= 0) {
-      todas = todas.concat(variablesFinanzas_());
-    }
-
-    return todas;
   }
 
   /**
-   * Variables de Marketing nivel avanzado.
-   * Proceso.gs lee: marketing.precio, marketing.publicidad, marketing.calidad
+   * Formatea el rango de una variable para mostrarlo como descripción.
    */
-  function variablesMarketing_() {
-    return [
-      // Precio
-      { id: 'precio', nombre: 'Precio de venta unitario', descripcion: '±30% del precio referencia de la industria', tipo: 'numerico', min: 0, max: 999999999, step: 100, categoria: 'Precio', modulo: 'marketing' },
-
-      // Canales de distribución
-      { id: 'inv_canal_masivo', nombre: 'Inv. canal distribución masivo', descripcion: '$0 a $200M', tipo: 'numerico', min: 0, max: 200000000, step: 1000000, categoria: 'Canales de distribución', modulo: 'marketing' },
-      { id: 'inv_canal_especializado', nombre: 'Inv. canal especializado', descripcion: '$0 a $200M', tipo: 'numerico', min: 0, max: 200000000, step: 1000000, categoria: 'Canales de distribución', modulo: 'marketing' },
-      { id: 'inv_canal_institucional', nombre: 'Inv. canal profesional/institucional', descripcion: '$0 a $120M', tipo: 'numerico', min: 0, max: 120000000, step: 1000000, categoria: 'Canales de distribución', modulo: 'marketing' },
-      { id: 'inv_canal_ecommerce', nombre: 'Inv. canal e-commerce', descripcion: '$0 a $150M', tipo: 'numerico', min: 0, max: 150000000, step: 1000000, categoria: 'Canales de distribución', modulo: 'marketing' },
-      { id: 'inv_canal_mayorista', nombre: 'Inv. canal mayorista/distribución', descripcion: '$0 a $120M', tipo: 'numerico', min: 0, max: 120000000, step: 1000000, categoria: 'Canales de distribución', modulo: 'marketing' },
-
-      // Comunicación (publicidad se suma internamente para el motor)
-      { id: 'publicidad', nombre: 'Publicidad total (medios + digital)', descripcion: 'Monto total de inversión publicitaria', tipo: 'numerico', min: 0, max: 360000000, step: 1000000, categoria: 'Comunicación', modulo: 'marketing' },
-      { id: 'promociones', nombre: 'Promociones y activaciones', descripcion: '$0 a $150M', tipo: 'numerico', min: 0, max: 150000000, step: 1000000, categoria: 'Comunicación', modulo: 'marketing' },
-      { id: 'ferias_eventos', nombre: 'Ferias y eventos', descripcion: '$0 a $100M', tipo: 'numerico', min: 0, max: 100000000, step: 1000000, categoria: 'Comunicación', modulo: 'marketing' },
-
-      // Producto
-      { id: 'calidad', nombre: 'Inversión en calidad de producto', descripcion: 'I+D, packaging, posicionamiento', tipo: 'numerico', min: 0, max: 320000000, step: 1000000, categoria: 'Producto', modulo: 'marketing' },
-
-      // Fuerza de ventas
-      { id: 'capacitacion_fdv', nombre: 'Capacitación fuerza de ventas', descripcion: '$0 a $80M', tipo: 'numerico', min: 0, max: 80000000, step: 1000000, categoria: 'Fuerza de ventas', modulo: 'marketing' },
-      { id: 'incentivos_comisiones', nombre: 'Incentivos y comisiones', descripcion: '$0 a $100M', tipo: 'numerico', min: 0, max: 100000000, step: 1000000, categoria: 'Fuerza de ventas', modulo: 'marketing' },
-      { id: 'capacitacion_canal', nombre: 'Capacitación técnica canal', descripcion: '$0 a $80M', tipo: 'numerico', min: 0, max: 80000000, step: 1000000, categoria: 'Fuerza de ventas', modulo: 'marketing' },
-
-      // Servicio
-      { id: 'fidelizacion', nombre: 'Programas de fidelización', descripcion: '$0 a $100M', tipo: 'numerico', min: 0, max: 100000000, step: 1000000, categoria: 'Servicio', modulo: 'marketing' },
-      { id: 'postventa', nombre: 'Servicio postventa', descripcion: '$0 a $80M', tipo: 'numerico', min: 0, max: 80000000, step: 1000000, categoria: 'Servicio', modulo: 'marketing' },
-      { id: 'merchandising', nombre: 'Merchandising y ejecución', descripcion: '$0 a $80M', tipo: 'numerico', min: 0, max: 80000000, step: 1000000, categoria: 'Servicio', modulo: 'marketing' },
-      { id: 'cobertura_territorial', nombre: 'Cobertura territorial', descripcion: '$0 a $60M', tipo: 'numerico', min: 0, max: 60000000, step: 1000000, categoria: 'Servicio', modulo: 'marketing' },
-      { id: 'rebajas_condiciones', nombre: 'Rebajas y condiciones comerciales', descripcion: '$0 a $150M', tipo: 'numerico', min: 0, max: 150000000, step: 1000000, categoria: 'Servicio', modulo: 'marketing' },
-    ];
+  function formatearRango_(v) {
+    if (v.esMonetaria || v.unidad === 'CLP') {
+      return FrontUtils.moneda(v.min) + ' a ' + FrontUtils.moneda(v.max);
+    }
+    if (v.unidad === 'ratio' || v.unidad === '%') {
+      return v.min + ' a ' + v.max;
+    }
+    return v.min + ' a ' + v.max + (v.unidad ? ' ' + v.unidad : '');
   }
 
   /**
-   * Variables de Logística.
-   * Proceso.gs lee: logistica.inversion
+   * Formatea un valor corto para placeholder.
    */
-  function variablesLogistica_() {
-    return [
-      { id: 'inversion', nombre: 'Inversión en eficiencia operacional', descripcion: 'Reduce el costo unitario hasta un 15%', tipo: 'numerico', min: 0, max: 10000000, step: 500000, categoria: 'Eficiencia operacional', modulo: 'logistica' },
-      { id: 'transporte', nombre: 'Inversión en transporte y distribución', descripcion: '$0 a $80M', tipo: 'numerico', min: 0, max: 80000000, step: 1000000, categoria: 'Distribución', modulo: 'logistica' },
-      { id: 'almacenamiento', nombre: 'Inversión en almacenamiento', descripcion: '$0 a $60M', tipo: 'numerico', min: 0, max: 60000000, step: 1000000, categoria: 'Distribución', modulo: 'logistica' },
-      { id: 'tecnologia_scm', nombre: 'Tecnología supply chain', descripcion: '$0 a $50M', tipo: 'numerico', min: 0, max: 50000000, step: 1000000, categoria: 'Tecnología', modulo: 'logistica' },
-    ];
+  function formatearValorCorto_(v, valor) {
+    if (v.esMonetaria || v.unidad === 'CLP') {
+      return '$' + Number(valor).toLocaleString('es-CL');
+    }
+    return String(valor);
   }
 
   /**
-   * Variables de Recursos Humanos.
-   * Proceso.gs lee: rrhh.capacitacion, rrhh.bonos
+   * Calcula el step apropiado para el input según la escala de la variable.
    */
-  function variablesRRHH_() {
-    return [
-      { id: 'capacitacion', nombre: 'Inversión en capacitación', descripcion: 'Formación y desarrollo del equipo', tipo: 'numerico', min: 0, max: 80000000, step: 1000000, categoria: 'Desarrollo de personas', modulo: 'rrhh' },
-      { id: 'bonos', nombre: 'Bonos e incentivos al personal', descripcion: 'Bonos de desempeño y retención', tipo: 'numerico', min: 0, max: 100000000, step: 1000000, categoria: 'Compensaciones', modulo: 'rrhh' },
-      { id: 'bienestar', nombre: 'Programas de bienestar', descripcion: '$0 a $40M', tipo: 'numerico', min: 0, max: 40000000, step: 1000000, categoria: 'Bienestar', modulo: 'rrhh' },
-      { id: 'seleccion', nombre: 'Inversión en selección y contratación', descripcion: '$0 a $30M', tipo: 'numerico', min: 0, max: 30000000, step: 1000000, categoria: 'Dotación', modulo: 'rrhh' },
-    ];
+  function calcularStep_(v) {
+    if (v.esMonetaria || v.unidad === 'CLP') {
+      const rango = v.max - v.min;
+      if (rango > 100000000) return 5000000;
+      if (rango > 10000000) return 1000000;
+      if (rango > 1000000) return 100000;
+      return 10000;
+    }
+    if (v.unidad === 'ratio') return 0.01;
+    if (v.max <= 10) return 1;
+    if (v.max <= 100) return 5;
+    return 1;
   }
 
   /**
-   * Variables de Finanzas.
-   * Proceso.gs aún no lee estas variables (se incorporan con el Motor).
+   * Invalida la caché del catálogo (útil si el admin cambia la industria).
    */
-  function variablesFinanzas_() {
-    return [
-      { id: 'credito_cortoplazo', nombre: 'Crédito de corto plazo', descripcion: 'Línea de crédito para capital de trabajo', tipo: 'numerico', min: 0, max: 500000000, step: 5000000, categoria: 'Financiamiento', modulo: 'finanzas' },
-      { id: 'credito_largoplazo', nombre: 'Crédito de largo plazo', descripcion: 'Crédito para inversión', tipo: 'numerico', min: 0, max: 1000000000, step: 10000000, categoria: 'Financiamiento', modulo: 'finanzas' },
-      { id: 'inv_deposito', nombre: 'Inversión en depósito a plazo', descripcion: 'Excedentes de caja', tipo: 'numerico', min: 0, max: 500000000, step: 5000000, categoria: 'Inversión', modulo: 'finanzas' },
-      { id: 'politica_cobro', nombre: 'Plazo de cobro a clientes (días)', descripcion: '15 a 120 días', tipo: 'numerico', min: 15, max: 120, step: 1, categoria: 'Gestión de capital de trabajo', modulo: 'finanzas' },
-      { id: 'politica_pago', nombre: 'Plazo de pago a proveedores (días)', descripcion: '30 a 90 días', tipo: 'numerico', min: 30, max: 90, step: 1, categoria: 'Gestión de capital de trabajo', modulo: 'finanzas' },
-    ];
+  function invalidarCatalogo() {
+    _catalogo = null;
   }
 
   return {
     render: render,
+    cargarCatalogo: cargarCatalogo,
+    cambiarTab: cambiarTab,
     guardarVariable: guardarVariable,
-    enviarDefinitiva: enviarDefinitiva
+    enviarDefinitiva: enviarDefinitiva,
+    invalidarCatalogo: invalidarCatalogo
   };
 
 })();
