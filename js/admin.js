@@ -144,6 +144,19 @@ const AdminApp = (function() {
     });
     html += '</div></div>';
 
+    // Nivel de logística (solo visible si logística está activo)
+    html += '<div class="form-grupo mb-3" id="cc-nivel-log-grupo">';
+    html += '<label class="form-label">Nivel de Logística</label>';
+    html += '<p class="text-xs text-secondary mb-2">Determina cuántas decisiones logísticas toman los estudiantes. Solo aplica si Logística está activo.</p>';
+    html += '<div class="flex gap-3">';
+    html += '<label style="display:flex;align-items:center;gap:6px;cursor:pointer">';
+    html += '<input type="radio" name="cc-nivel-log" value="basico"> <span class="text-sm">Básico (5 decisiones)</span></label>';
+    html += '<label style="display:flex;align-items:center;gap:6px;cursor:pointer">';
+    html += '<input type="radio" name="cc-nivel-log" value="avanzado" checked> <span class="text-sm">Avanzado (21 decisiones)</span></label>';
+    html += '<label style="display:flex;align-items:center;gap:6px;cursor:pointer">';
+    html += '<input type="radio" name="cc-nivel-log" value="especializado"> <span class="text-sm">Especializado (42 decisiones)</span></label>';
+    html += '</div></div>';
+
     // Inducción
     html += '<div class="form-grupo mb-3">';
     html += '<label class="form-label">Semanas de inducción</label>';
@@ -190,6 +203,11 @@ const AdminApp = (function() {
       if (cb && (cb.checked || m.obligatorio)) modulosActivos.push(m.clave);
     });
 
+    // Nivel de logística
+    var nivelLogistica = 'avanzado';
+    var radios = document.querySelectorAll('input[name="cc-nivel-log"]');
+    radios.forEach(function(r) { if (r.checked) nivelLogistica = r.value; });
+
     const datos = {
       nombre: nombre,
       institucion: { sigla: sigla, cursoNombre: asignatura, codigo: codigo },
@@ -197,7 +215,8 @@ const AdminApp = (function() {
       totalPeriodos: periodos,
       semestre: semestre,
       modulosActivos: modulosActivos,
-      induccionSemanas: induccionSemanas
+      induccionSemanas: induccionSemanas,
+      nivelLogistica: nivelLogistica
     };
 
     const div = document.getElementById('admin-contenido');
