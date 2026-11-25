@@ -6,124 +6,165 @@
  * agrupadas por subgerencia. Soporta 147 variables en 6 módulos.
  * Validación de presupuesto en tiempo real.
  * Filtro automático de Logística por nivel (1, 2 o 3).
+ *
+ * HISTÓRICO: permite ver decisiones de períodos anteriores en modo
+ * solo lectura, con comparación visual contra el período previo.
  */
 
 const Decisiones = (function() {
 
-  // Caché local del catálogo (se pide una vez por sesión)
   let _catalogo = null;
+  let _historial = {};
+  let _periodoActual = 0;
+  let _periodoViendo = 0;
+  let _modoLectura = false;
+  let _contenedorRef = null;
+  let _perfilRef = null;
+  let _dataRef = null;
 
-  // Nombres de módulos para las tabs
   const NOMBRES_MODULO = {
-    marketing:     'Marketing',
-    finanzas:      'Finanzas',
-    logistica:     'Logística',
-    rrhh:          'RRHH',
-    contabilidad:  'Contabilidad',
-    auditoria:     'Auditoría'
+    marketing: 'Marketing', finanzas: 'Finanzas', logistica: 'Logística',
+    rrhh: 'RRHH', contabilidad: 'Contabilidad', auditoria: 'Auditoría'
   };
-
-  // Iconos por módulo
   const ICONOS_MODULO = {
-    marketing:     '📊',
-    finanzas:      '💰',
-    logistica:     '🚚',
-    rrhh:          '👥',
-    contabilidad:  '📋',
-    auditoria:     '🔍'
+    marketing: '📊', finanzas: '💰', logistica: '🚚',
+    rrhh: '👥', contabilidad: '📋', auditoria: '🔍'
   };
-
-  // Colores por módulo (fondo suave para las secciones)
   const COLORES_MODULO = {
-    marketing:     '#E3F2FD',
-    finanzas:      '#F3E5F5',
-    logistica:     '#E8F5E9',
-    rrhh:          '#FFF3E0',
-    contabilidad:  '#F1F8E9',
-    auditoria:     '#FCE4EC'
+    marketing: '#E3F2FD', finanzas: '#F3E5F5', logistica: '#E8F5E9',
+    rrhh: '#FFF3E0', contabilidad: '#F1F8E9', auditoria: '#FCE4EC'
   };
 
-  /**
-   * Carga el catálogo de variables desde el backend (Motor de la industria).
-   * @returns {Promise<Object|null>}
-   */
   async function cargarCatalogo() {
     if (_catalogo) return _catalogo;
-
     const resp = await API.catalogoVariables();
-    if (resp.ok) {
-      _catalogo = resp.data;
-      return _catalogo;
-    }
+    if (resp.ok) { _catalogo = resp.data; return _catalogo; }
     console.error('Error cargando catálogo:', resp.error);
     return null;
   }
 
-  /**
-   * Renderiza la sala de decisiones.
-   * @param {HTMLElement} contenedor
-   * @param {Object} data - { periodo, decisiones, presupuesto, estado }
-   * @param {Object} perfil - Perfil del usuario
-   */
   async function render(contenedor, data, perfil) {
+    _contenedorRef = contenedor;
+    _perfilRef = perfil;
+    _dataRef = data;
     const periodo = data.periodo;
+    _periodoActual = periodo;
+    _periodoViendo = periodo;
+    _modoLectura = false;
+    if (data.decisiones) _historial[periodo] = data.decisiones;
+    cargarHistorialSilencioso_(periodo);
+    renderInterno_(contenedor, data, perfil, periodo, false);
+  }
+
+  async function cargarHistorialSilencioso_(periodoActual) {
+    for (var p = 1; p < periodoActual; p++) {
+      if (!_historial[p]) {
+        var resp = await API.misDecisiones(p);
+        if (resp.ok && resp.data && resp.data.decisiones) {
+          _historial[p] = resp.data.decisiones;
+        }
+      }
+    }
+  }
+
+  async function verPeriodo(periodo) {
+    _periodoViendo = periodo;
+    _modoLectura = (periodo !== _periodoActual);
+    if (!_historial[periodo]) {
+      var resp = await API.misDecisiones(periodo);
+      if (resp.ok && resp.data && resp.data.decisiones) {
+        _historial[periodo] = resp.data.decisiones;
+      }
+    }
+    var dataVista = {
+      periodo: periodo,
+      decisiones: _historial[periodo] || {},
+      presupuesto: _modoLectura ? null : _dataRef.presupuesto,
+      estado: _modoLectura ? 'historico' : _dataRef.estado
+    };
+    renderInterno_(_contenedorRef, dataVista, _perfilRef, periodo, _modoLectura);
+  }
+
+  async function renderInterno_(contenedor, data, perfil, periodo, soloLectura) {
     const estado = data.estado;
 
-    if (estado === 'definitiva') {
+    if (estado === 'definitiva' && !soloLectura) {
       contenedor.innerHTML = '<div class="alerta alerta-info">Las decisiones del período ' + periodo + ' ya fueron enviadas como definitivas.</div>';
       return;
     }
-
-    if (!perfil.estadoSimulacion || !perfil.estadoSimulacion.salaAbierta) {
+    if (!soloLectura && (!perfil.estadoSimulacion || !perfil.estadoSimulacion.salaAbierta)) {
       contenedor.innerHTML = '<div class="alerta alerta-info">La sala de decisiones no está abierta. Espera las instrucciones del académico.</div>';
       return;
     }
 
-    // Cargar catálogo de la industria
     contenedor.innerHTML = '<div class="text-center p-4"><div class="spinner"></div><p class="text-sm mt-2">Cargando variables de la industria...</p></div>';
     const catalogo = await cargarCatalogo();
-
     if (!catalogo) {
-      contenedor.innerHTML = '<div class="alerta alerta-error">No se pudo cargar el catálogo de variables. El curso puede no tener una industria asignada.</div>';
+      contenedor.innerHTML = '<div class="alerta alerta-error">No se pudo cargar el catálogo de variables.</div>';
       return;
     }
 
     const modulos = catalogo.modulos;
     const nombresModulo = Object.keys(modulos);
-
     if (nombresModulo.length === 0) {
       contenedor.innerHTML = '<div class="alerta alerta-info">No hay módulos activos en este curso.</div>';
       return;
     }
 
-    // ── Encabezado ──
+    var decAnterior = (periodo > 1 && _historial[periodo - 1]) ? _historial[periodo - 1] : null;
+
     let html = '<div class="card">';
-    html += '<div class="flex items-center justify-between mb-3">';
-    html += '<div>';
+
+    // Banner modo lectura
+    if (soloLectura) {
+      html += '<div style="background:#FFF3E0;border:1px solid #FFB74D;border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:8px">';
+      html += '<span style="font-size:1.1rem">📂</span>';
+      html += '<span style="font:500 .82rem/1.3 var(--disp,sans-serif);color:#E65100">Histórico del período ' + periodo + ' (solo lectura)</span>';
+      html += '<button onclick="Decisiones.verPeriodo(' + _periodoActual + ')" style="margin-left:auto;font:500 .7rem/1 sans-serif;padding:5px 12px;border:1px solid #E65100;border-radius:5px;background:none;color:#E65100;cursor:pointer">Volver al período actual</button>';
+      html += '</div>';
+    }
+
+    html += '<div class="flex items-center justify-between mb-3"><div>';
     html += '<h3 class="text-navy">Sala de decisiones — Período ' + periodo + '</h3>';
     html += '<p class="text-xs text-light mt-1">Industria: ' + catalogo.industria;
     if (catalogo.conteoVariables) {
       const totalActivas = Object.values(catalogo.conteoVariables).reduce(function(a, b) { return a + b; }, 0);
       html += ' · ' + totalActivas + ' decisiones activas';
     }
-    html += '</p>';
-    html += '</div>';
-    html += '<div id="presupuesto-badge" class="badge badge-navy">Presupuesto: cargando...</div>';
+    html += '</p></div>';
+    if (!soloLectura) html += '<div id="presupuesto-badge" class="badge badge-navy">Presupuesto: cargando...</div>';
     html += '</div>';
 
-    // ── Barra de presupuesto visual ──
-    html += '<div id="barra-presupuesto" style="margin-bottom:1rem"></div>';
+    // Selector de períodos
+    if (_periodoActual > 1) {
+      html += '<div style="display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap;align-items:center">';
+      html += '<span style="font:500 .65rem/1 sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#888;margin-right:4px">Período:</span>';
+      for (var pp = 1; pp <= _periodoActual; pp++) {
+        var esActivo = pp === periodo;
+        var esActual = pp === _periodoActual;
+        var btnBg = esActivo ? '#1B2A4A' : (esActual ? '#E3F2FD' : '#fff');
+        var btnColor = esActivo ? '#fff' : '#1B2A4A';
+        var btnBorder = esActivo ? '#1B2A4A' : (esActual ? '#2E5C8A' : '#ddd');
+        html += '<button onclick="Decisiones.verPeriodo(' + pp + ')" style="font:500 .7rem/1 sans-serif;padding:5px 12px;border:1px solid ' + btnBorder + ';border-radius:5px;cursor:pointer;background:' + btnBg + ';color:' + btnColor + '">';
+        html += pp;
+        if (esActual) html += ' <span style="font-size:.55rem;opacity:.7">(actual)</span>';
+        html += '</button>';
+      }
+      html += '</div>';
+    }
 
-    // ── Tabs de módulos ──
-    html += '<div class="tabs-modulo" style="display:flex;gap:4px;margin-bottom:1rem;border-bottom:2px solid var(--border-light);padding-bottom:0;overflow-x:auto">';
+    if (!soloLectura) html += '<div id="barra-presupuesto" style="margin-bottom:1rem"></div>';
+
+    // Tabs de módulos
+    html += '<div class="tabs-modulo" style="display:flex;gap:4px;margin-bottom:1rem;border-bottom:2px solid #eee;padding-bottom:0;overflow-x:auto">';
     nombresModulo.forEach(function(mod, idx) {
       const activo = idx === 0;
       const conteo = catalogo.conteoVariables ? catalogo.conteoVariables[mod] || 0 : 0;
       html += '<button class="tab-modulo' + (activo ? ' tab-activo' : '') + '" data-modulo="' + mod + '" ';
       html += 'onclick="Decisiones.cambiarTab(\'' + mod + '\')" ';
       html += 'style="padding:0.5rem 1rem;border:none;';
-      html += 'background:' + (activo ? 'var(--navy)' : 'transparent') + ';';
-      html += 'color:' + (activo ? '#fff' : 'var(--text-secondary)') + ';';
+      html += 'background:' + (activo ? '#1B2A4A' : 'transparent') + ';';
+      html += 'color:' + (activo ? '#fff' : '#888') + ';';
       html += 'border-radius:6px 6px 0 0;cursor:pointer;font-size:0.85rem;white-space:nowrap">';
       html += (ICONOS_MODULO[mod] || '') + ' ' + (NOMBRES_MODULO[mod] || mod);
       html += ' <span style="font-size:0.7rem;opacity:0.7">(' + conteo + ')</span>';
@@ -131,318 +172,248 @@ const Decisiones = (function() {
     });
     html += '</div>';
 
-    // ── Paneles de cada módulo ──
+    // Paneles de cada módulo
     nombresModulo.forEach(function(mod, idx) {
       const visible = idx === 0 ? '' : ' style="display:none"';
       html += '<div class="panel-modulo" id="panel-' + mod + '"' + visible + '>';
-
       const moduloData = modulos[mod];
       if (!moduloData || !moduloData.variables || moduloData.variables.length === 0) {
         html += '<p class="text-sm text-light">Sin variables en este módulo.</p>';
       } else {
-        // Renderizar agrupado por subgerencia
         const subgerencias = moduloData.subgerencias || {};
         const sgNombres = Object.keys(subgerencias);
-
         if (sgNombres.length > 1) {
-          // Múltiples subgerencias: mostrar secciones colapsables
           sgNombres.forEach(function(sg) {
             html += '<div class="subgerencia-seccion" style="margin-bottom:1rem">';
-            html += '<div class="sg-header" style="padding:0.5rem 0.75rem;background:' + (COLORES_MODULO[mod] || '#f5f5f5') + ';';
-            html += 'border-radius:6px;margin-bottom:0.5rem;cursor:pointer" ';
+            html += '<div class="sg-header" style="padding:0.5rem 0.75rem;background:' + (COLORES_MODULO[mod] || '#f5f5f5') + ';border-radius:6px;margin-bottom:0.5rem;cursor:pointer" ';
             html += 'onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === \'none\' ? \'block\' : \'none\'">';
             html += '<span class="font-semibold text-sm">' + sg + '</span>';
             html += ' <span class="text-xs text-light">(' + subgerencias[sg].length + ' variables)</span>';
-            html += '</div>';
-            html += '<div class="sg-variables">';
-
+            html += '</div><div class="sg-variables">';
             subgerencias[sg].forEach(function(v) {
               const valorActual = obtenerValorGuardado_(data.decisiones, mod, v.id);
-              html += renderVariable_(mod, v, valorActual);
+              const valorAnterior = decAnterior ? obtenerValorGuardado_(decAnterior, mod, v.id) : null;
+              html += renderVariable_(mod, v, valorActual, valorAnterior, soloLectura);
             });
-
             html += '</div></div>';
           });
         } else {
-          // Una sola subgerencia o sin agrupación: listar directamente
           moduloData.variables.forEach(function(v) {
             const valorActual = obtenerValorGuardado_(data.decisiones, mod, v.id);
-            html += renderVariable_(mod, v, valorActual);
+            const valorAnterior = decAnterior ? obtenerValorGuardado_(decAnterior, mod, v.id) : null;
+            html += renderVariable_(mod, v, valorActual, valorAnterior, soloLectura);
           });
         }
       }
-
       html += '</div>';
     });
 
-    // ── Botón de envío definitivo ──
-    html += '<hr class="separador" style="margin-top:1.5rem">';
-    html += '<div class="flex items-center justify-between">';
-    html += '<div id="mensaje-sala" class="text-sm"></div>';
-
-    if (perfil.rol === 'gerente_general') {
-      html += '<button class="btn btn-primary btn-lg" onclick="Decisiones.enviarDefinitiva()">Enviar decisión definitiva</button>';
-    } else {
-      html += '<p class="text-sm text-secondary">Solo el Gerente General puede enviar la decisión definitiva.</p>';
+    // Botón envío definitivo (solo período actual)
+    if (!soloLectura) {
+      html += '<hr class="separador" style="margin-top:1.5rem">';
+      html += '<div class="flex items-center justify-between">';
+      html += '<div id="mensaje-sala" class="text-sm"></div>';
+      if (perfil.rol === 'gerente_general') {
+        html += '<button class="btn btn-primary btn-lg" onclick="Decisiones.enviarDefinitiva()">Enviar decisión definitiva</button>';
+      } else {
+        html += '<p class="text-sm text-secondary">Solo el Gerente General puede enviar la decisión definitiva.</p>';
+      }
+      html += '</div>';
     }
 
     html += '</div>';
-    html += '</div>';
-
     contenedor.innerHTML = html;
-
-    // Actualizar badge y barra de presupuesto
-    actualizarPresupuesto_(data.presupuesto);
+    if (!soloLectura) actualizarPresupuesto_(data.presupuesto);
   }
 
-  /**
-   * Renderiza una variable individual según su tipo de input.
-   */
-  function renderVariable_(modulo, v, valorActual) {
-    let html = '<div class="variable-row" style="display:flex;align-items:center;gap:8px;padding:0.6rem 0;border-bottom:1px solid var(--border-light)">';
+  function renderVariable_(modulo, v, valorActual, valorAnterior, soloLectura) {
+    let html = '<div class="variable-row" style="display:flex;align-items:center;gap:8px;padding:0.6rem 0;border-bottom:1px solid #eee">';
 
-    // Columna 1: Nombre, cargo y atributo
+    // Col 1: nombre, cargo, atributo
     html += '<div style="flex:1;min-width:0">';
     html += '<span class="font-semibold text-sm">' + v.nombre + '</span>';
     html += '<br><span class="text-xs text-light">';
     if (v.cargo) html += v.cargo;
     if (v.atributo) html += ' · Atributo: ' + v.atributo;
     if (v.nivelLogistica) html += ' · ' + v.nivelLogistica;
-    html += '</span>';
-
-    // Rango e indicador presupuestario
-    html += '<br><span class="text-xs text-light">';
+    html += '</span><br><span class="text-xs text-light">';
     html += formatearRango_(v);
-    if (v.esMonetaria) html += ' · <span style="color:var(--warning);font-weight:600">Presupuestaria</span>';
+    if (v.esMonetaria) html += ' · <span style="color:#E8600A;font-weight:600">Presupuestaria</span>';
     if (v.kSaturacion > 0) html += ' · K=' + v.kSaturacion + 'MM';
-    html += '</span>';
-    html += '</div>';
+    html += '</span></div>';
 
-    // Columna 2: Input según tipo
+    // Col 2: input o valor
     html += '<div style="width:200px;flex-shrink:0">';
-
     if (v.esSeleccion) {
-      // Selector (dropdown) con opciones reales desde el Motor
-      html += '<select class="form-input" ';
-      html += 'id="dec-' + modulo + '-' + v.id + '" ';
-      html += 'data-modulo="' + modulo + '" data-variable="' + v.id + '" ';
-      html += 'onchange="Decisiones.guardarVariable(\'' + modulo + '\',\'' + v.id + '\')" ';
-      html += 'style="font-size:0.9rem">';
-      html += '<option value="">Seleccionar...</option>';
-      if (v.opciones && v.opciones.length > 0) {
-        v.opciones.forEach(function(opt) {
-          var sel = (valorActual === opt.id) ? ' selected' : '';
-          html += '<option value="' + opt.id + '"' + sel + ' title="' + (opt.descripcion || '') + '">' + opt.nombre + '</option>';
-        });
-      }
-      html += '</select>';
-      // Mostrar descripción de la opción seleccionada
-      if (v.opciones && v.opciones.length > 0) {
-        html += '<p id="desc-' + modulo + '-' + v.id + '" class="text-xs text-light mt-1" style="max-width:200px"></p>';
+      if (soloLectura) {
+        var opNombre = '(sin seleccionar)';
+        if (valorActual && v.opciones) {
+          var opEnc = v.opciones.find(function(o) { return o.id === valorActual; });
+          if (opEnc) opNombre = opEnc.nombre;
+        }
+        html += '<div style="font:500 .88rem/1.3 sans-serif;color:#1B2A4A;padding:6px 0">' + opNombre + '</div>';
+      } else {
+        html += '<select class="form-input" id="dec-' + modulo + '-' + v.id + '" data-modulo="' + modulo + '" data-variable="' + v.id + '" onchange="Decisiones.guardarVariable(\'' + modulo + '\',\'' + v.id + '\')" style="font-size:0.9rem">';
+        html += '<option value="">Seleccionar...</option>';
+        if (v.opciones && v.opciones.length > 0) {
+          v.opciones.forEach(function(opt) {
+            var sel = (valorActual === opt.id) ? ' selected' : '';
+            html += '<option value="' + opt.id + '"' + sel + ' title="' + (opt.descripcion || '') + '">' + opt.nombre + '</option>';
+          });
+        }
+        html += '</select>';
+        if (v.opciones && v.opciones.length > 0) {
+          html += '<p id="desc-' + modulo + '-' + v.id + '" class="text-xs text-light mt-1" style="max-width:200px"></p>';
+        }
       }
     } else {
-      // Input numérico
-      const step = calcularStep_(v);
-      const placeholder = v.defecto ? formatearValorCorto_(v, v.defecto) : '0';
-
-      html += '<input type="number" class="form-input" ';
-      html += 'id="dec-' + modulo + '-' + v.id + '" ';
-      html += 'data-modulo="' + modulo + '" data-variable="' + v.id + '" ';
-      html += 'value="' + (valorActual !== null && valorActual !== '' ? valorActual : '') + '" ';
-      if (v.max > 0) html += 'min="' + v.min + '" max="' + v.max + '" ';
-      html += 'step="' + step + '" ';
-      html += 'placeholder="' + placeholder + '" ';
-      html += 'onchange="Decisiones.guardarVariable(\'' + modulo + '\',\'' + v.id + '\')" ';
-      html += 'style="text-align:right;font-size:0.9rem">';
+      if (soloLectura) {
+        var mostrar = valorActual !== null && valorActual !== '' ? valorActual : '—';
+        if (v.esMonetaria && mostrar !== '—') mostrar = '$' + Number(mostrar).toLocaleString('es-CL');
+        else if (v.esPorcentaje && mostrar !== '—') mostrar = mostrar + '%';
+        html += '<div style="font:500 .88rem/1.3 sans-serif;color:#1B2A4A;padding:6px 0;text-align:right">' + mostrar + '</div>';
+      } else {
+        const step = calcularStep_(v);
+        const placeholder = v.defecto ? formatearValorCorto_(v, v.defecto) : '0';
+        html += '<input type="number" class="form-input" id="dec-' + modulo + '-' + v.id + '" data-modulo="' + modulo + '" data-variable="' + v.id + '" value="' + (valorActual !== null && valorActual !== '' ? valorActual : '') + '" ';
+        if (v.max > 0) html += 'min="' + v.min + '" max="' + v.max + '" ';
+        html += 'step="' + step + '" placeholder="' + placeholder + '" onchange="Decisiones.guardarVariable(\'' + modulo + '\',\'' + v.id + '\')" style="text-align:right;font-size:0.9rem">';
+      }
     }
-
     html += '</div>';
 
-    // Columna 3: Tipo de input (unidad)
+    // Col 3: unidad
     html += '<div class="text-xs text-light" style="width:70px;flex-shrink:0;text-align:center">' + (v.tipoInput || '') + '</div>';
 
-    // Columna 4: Estado (check / error / spinner)
-    html += '<div id="estado-' + modulo + '-' + v.id + '" class="text-xs" style="width:30px;text-align:center;flex-shrink:0"></div>';
+    // Col 4: estado guardado
+    if (soloLectura) {
+      html += '<div style="width:30px;flex-shrink:0"></div>';
+    } else {
+      html += '<div id="estado-' + modulo + '-' + v.id + '" class="text-xs" style="width:30px;text-align:center;flex-shrink:0"></div>';
+    }
+
+    // Col 5: valor anterior (comparación)
+    if (valorAnterior !== null && valorAnterior !== '') {
+      var textoAnt = valorAnterior;
+      if (v.esSeleccion && v.opciones) {
+        var opAnt = v.opciones.find(function(o) { return o.id === valorAnterior; });
+        if (opAnt) textoAnt = opAnt.nombre;
+      } else if (v.esMonetaria) {
+        textoAnt = '$' + Number(valorAnterior).toLocaleString('es-CL');
+      } else if (v.esPorcentaje) {
+        textoAnt = valorAnterior + '%';
+      }
+      var cambio = '';
+      if (!v.esSeleccion && valorActual !== null && valorActual !== '') {
+        var diff = parseFloat(valorActual) - parseFloat(valorAnterior);
+        if (diff > 0) cambio = ' <span style="color:#16a34a;font-weight:600">↑</span>';
+        else if (diff < 0) cambio = ' <span style="color:#dc2626;font-weight:600">↓</span>';
+        else cambio = ' <span style="color:#888">=</span>';
+      }
+      html += '<div style="width:120px;flex-shrink:0;text-align:right;font:400 .72rem/1.3 sans-serif;color:#aaa" title="Período anterior">';
+      html += '<span style="font-size:.58rem;text-transform:uppercase;letter-spacing:.06em">Ant:</span> ' + textoAnt + cambio;
+      html += '</div>';
+    }
 
     html += '</div>';
     return html;
   }
 
-  /**
-   * Cambia la tab de módulo activa.
-   */
   function cambiarTab(modulo) {
-    document.querySelectorAll('.panel-modulo').forEach(function(p) {
-      p.style.display = 'none';
-    });
-
+    document.querySelectorAll('.panel-modulo').forEach(function(p) { p.style.display = 'none'; });
     document.querySelectorAll('.tab-modulo').forEach(function(t) {
-      t.style.background = 'transparent';
-      t.style.color = 'var(--text-secondary)';
-      t.classList.remove('tab-activo');
+      t.style.background = 'transparent'; t.style.color = '#888'; t.classList.remove('tab-activo');
     });
-
-    const panel = document.getElementById('panel-' + modulo);
+    var panel = document.getElementById('panel-' + modulo);
     if (panel) panel.style.display = 'block';
-
-    const tab = document.querySelector('.tab-modulo[data-modulo="' + modulo + '"]');
-    if (tab) {
-      tab.style.background = 'var(--navy)';
-      tab.style.color = '#fff';
-      tab.classList.add('tab-activo');
-    }
+    var tab = document.querySelector('.tab-modulo[data-modulo="' + modulo + '"]');
+    if (tab) { tab.style.background = '#1B2A4A'; tab.style.color = '#fff'; tab.classList.add('tab-activo'); }
   }
 
-  /**
-   * Guarda una variable individual enviando al backend.
-   * @param {string} modulo
-   * @param {string} variableId
-   */
   async function guardarVariable(modulo, variableId) {
+    if (_modoLectura) return;
     const input = document.getElementById('dec-' + modulo + '-' + variableId);
     const estadoDiv = document.getElementById('estado-' + modulo + '-' + variableId);
     const valor = input.value;
-
-    if (!valor && valor !== '0') {
-      estadoDiv.innerHTML = '';
-      return;
-    }
-
+    if (!valor && valor !== '0') { estadoDiv.innerHTML = ''; return; }
     estadoDiv.innerHTML = '<div class="spinner" style="width:14px;height:14px"></div>';
-
-    const resp = await API.guardarDecision({
-      modulo: modulo,
-      variable: variableId,
-      valor: valor
-    });
-
+    const resp = await API.guardarDecision({ modulo: modulo, variable: variableId, valor: valor });
     if (resp.ok) {
-      estadoDiv.innerHTML = '<span style="color:var(--success)">&#10003;</span>';
+      estadoDiv.innerHTML = '<span style="color:#16a34a">&#10003;</span>';
       if (resp.data.presupuesto) actualizarPresupuesto_(resp.data.presupuesto);
-      const msgDiv = document.getElementById('mensaje-sala');
+      var msgDiv = document.getElementById('mensaje-sala');
       if (msgDiv) msgDiv.innerHTML = '';
     } else {
-      estadoDiv.innerHTML = '<span style="color:var(--error)">&#10007;</span>';
-      const msgDiv = document.getElementById('mensaje-sala');
-      if (msgDiv) msgDiv.innerHTML = '<span class="text-sm" style="color:var(--error)">' + resp.error + '</span>';
+      estadoDiv.innerHTML = '<span style="color:#dc2626">&#10007;</span>';
+      var msgDiv = document.getElementById('mensaje-sala');
+      if (msgDiv) msgDiv.innerHTML = '<span class="text-sm" style="color:#dc2626">' + resp.error + '</span>';
       input.classList.add('input-error');
       setTimeout(function() { input.classList.remove('input-error'); }, 2000);
     }
   }
 
-  /**
-   * Envía las decisiones como definitivas.
-   */
   async function enviarDefinitiva() {
+    if (_modoLectura) return;
     if (!confirm('¿Confirmas el envío definitivo de las decisiones? No se podrán modificar después.')) return;
-
     const resp = await API.enviarDefinitiva();
-    const msgDiv = document.getElementById('mensaje-sala');
-
+    var msgDiv = document.getElementById('mensaje-sala');
     if (resp.ok) {
-      msgDiv.innerHTML = '<span style="color:var(--success)">' + resp.data.mensaje + '</span>';
+      msgDiv.innerHTML = '<span style="color:#16a34a">' + resp.data.mensaje + '</span>';
       setTimeout(function() { App.verDecisiones(); }, 1500);
     } else {
-      msgDiv.innerHTML = '<span style="color:var(--error)">' + resp.error + '</span>';
+      msgDiv.innerHTML = '<span style="color:#dc2626">' + resp.error + '</span>';
     }
   }
 
-  // ══════════════════════════════════════════════════
-  // UTILIDADES INTERNAS
-  // ══════════════════════════════════════════════════
-
-  /**
-   * Busca el valor guardado de una variable en las decisiones del período.
-   */
   function obtenerValorGuardado_(decisiones, modulo, variableId) {
     if (!decisiones || !decisiones[modulo]) return null;
     var d = decisiones[modulo][variableId];
     return d ? d.valor : null;
   }
 
-  /**
-   * Actualiza el badge y la barra visual de presupuesto.
-   */
   function actualizarPresupuesto_(presup) {
-    const badge = document.getElementById('presupuesto-badge');
-    const barra = document.getElementById('barra-presupuesto');
+    var badge = document.getElementById('presupuesto-badge');
+    var barra = document.getElementById('barra-presupuesto');
     if (!badge || !presup) return;
-
     if (presup.asignado > 0) {
-      const pct = Math.min(presup.porcentajeEjecucion, 150);
-      const color = pct > 100 ? 'var(--error)' : (pct > 80 ? 'var(--warning)' : 'var(--success)');
-      const colorClass = pct > 100 ? 'badge-red' : (pct > 80 ? 'badge-orange' : 'badge-navy');
-
-      badge.className = 'badge ' + colorClass;
+      var pct = Math.min(presup.porcentajeEjecucion, 150);
+      var color = pct > 100 ? '#dc2626' : (pct > 80 ? '#E8600A' : '#16a34a');
       badge.textContent = 'Presupuesto: ' + FrontUtils.moneda(presup.gastado) + ' / ' + FrontUtils.moneda(presup.asignado) + ' (' + presup.porcentajeEjecucion + '%)';
-
-      // Barra visual
       if (barra) {
-        let barraHtml = '<div style="background:var(--border-light);border-radius:4px;height:8px;overflow:hidden;position:relative">';
-        barraHtml += '<div style="background:' + color + ';height:100%;width:' + Math.min(pct, 100) + '%;border-radius:4px;transition:width 0.3s"></div>';
-        barraHtml += '</div>';
-
-        // Detalle por módulo
+        var barraHtml = '<div style="background:#eee;border-radius:4px;height:8px;overflow:hidden">';
+        barraHtml += '<div style="background:' + color + ';height:100%;width:' + Math.min(pct, 100) + '%;border-radius:4px;transition:width 0.3s"></div></div>';
         if (presup.detallePorModulo && Object.keys(presup.detallePorModulo).length > 0) {
           barraHtml += '<div style="display:flex;gap:12px;margin-top:4px;flex-wrap:wrap">';
-          for (const mod in presup.detallePorModulo) {
-            barraHtml += '<span class="text-xs text-light">';
-            barraHtml += (ICONOS_MODULO[mod] || '') + ' ' + (NOMBRES_MODULO[mod] || mod) + ': ';
-            barraHtml += FrontUtils.moneda(presup.detallePorModulo[mod]);
-            barraHtml += '</span>';
+          for (var mod in presup.detallePorModulo) {
+            barraHtml += '<span class="text-xs text-light">' + (ICONOS_MODULO[mod] || '') + ' ' + (NOMBRES_MODULO[mod] || mod) + ': ' + FrontUtils.moneda(presup.detallePorModulo[mod]) + '</span>';
           }
           barraHtml += '</div>';
         }
-
         barra.innerHTML = barraHtml;
       }
     } else {
-      badge.className = 'badge badge-navy';
       badge.textContent = 'Gastado: ' + FrontUtils.moneda(presup.gastado);
       if (barra) barra.innerHTML = '';
     }
   }
 
-  /**
-   * Formatea el rango de una variable para mostrarlo como descripción.
-   */
   function formatearRango_(v) {
     if (v.esSeleccion) return 'Selección';
     if (v.max <= 0) return '';
-    if (v.esMonetaria) {
-      return FrontUtils.moneda(v.min) + ' a ' + FrontUtils.moneda(v.max) + ' MM';
-    }
-    if (v.esPorcentaje) {
-      return v.min + '% a ' + v.max + '%';
-    }
-    if (v.tipoInput === 'Días') {
-      return v.min + ' a ' + v.max + ' días';
-    }
-    if (v.tipoInput === 'Ratio') {
-      return v.min + ' a ' + v.max;
-    }
+    if (v.esMonetaria) return FrontUtils.moneda(v.min) + ' a ' + FrontUtils.moneda(v.max) + ' MM';
+    if (v.esPorcentaje) return v.min + '% a ' + v.max + '%';
+    if (v.tipoInput === 'Días') return v.min + ' a ' + v.max + ' días';
+    if (v.tipoInput === 'Ratio') return v.min + ' a ' + v.max;
     return v.min + ' a ' + v.max + (v.tipoInput ? ' ' + v.tipoInput : '');
   }
 
-  /**
-   * Formatea un valor corto para placeholder.
-   */
   function formatearValorCorto_(v, valor) {
-    if (v.esMonetaria) {
-      return '$' + Number(valor).toLocaleString('es-CL');
-    }
+    if (v.esMonetaria) return '$' + Number(valor).toLocaleString('es-CL');
     return String(valor);
   }
 
-  /**
-   * Calcula el step apropiado para el input según el tipo de variable.
-   */
   function calcularStep_(v) {
-    if (v.esMonetaria) {
-      if (v.max > 500) return 10;
-      if (v.max > 100) return 5;
-      return 1;
-    }
+    if (v.esMonetaria) { if (v.max > 500) return 10; if (v.max > 100) return 5; return 1; }
     if (v.esPorcentaje) return 1;
     if (v.tipoInput === 'Ratio') return 0.01;
     if (v.tipoInput === 'Días') return 1;
@@ -452,12 +423,7 @@ const Decisiones = (function() {
     return 1;
   }
 
-  /**
-   * Invalida la caché del catálogo (útil si el admin cambia la industria).
-   */
-  function invalidarCatalogo() {
-    _catalogo = null;
-  }
+  function invalidarCatalogo() { _catalogo = null; }
 
   return {
     render: render,
@@ -465,7 +431,8 @@ const Decisiones = (function() {
     cambiarTab: cambiarTab,
     guardarVariable: guardarVariable,
     enviarDefinitiva: enviarDefinitiva,
-    invalidarCatalogo: invalidarCatalogo
+    invalidarCatalogo: invalidarCatalogo,
+    verPeriodo: verPeriodo
   };
 
 })();
