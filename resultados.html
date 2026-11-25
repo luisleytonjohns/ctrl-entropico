@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Resultados &mdash; CTRL ENTROPICO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap">
+<link rel="icon" href="img/icon.png" type="image/png">
+<meta name="theme-color" content="#1B2A4A">
+<style>
+:root{
+  --navy:#1B2A4A;--navy-deep:#0B1A30;--blue:#2E5C8A;
+  --orange:#E8600A;--orange-t:#B84A08;--turquesa:#00A896;--turquesa-t:#007A6D;
+  --marfil:#F7F5EF;--pizarra:#475569;--borde:#DEDBD2;--sup:#FFFFFF;--suave:#EFECE4;
+  --disp:"Lexend",system-ui,sans-serif;--sans:"Inter",system-ui,sans-serif;
+  --verde:#16a34a;--rojo:#dc2626;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--marfil);color:var(--navy);font:15px/1.55 var(--sans)}
+h1,h2,h3,h4{font-family:var(--disp);margin:0;text-wrap:balance}
+a{color:var(--blue);text-decoration:none}
+img{max-width:100%;display:block}
+button{font:inherit;cursor:pointer}
+.in{max-width:1100px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
+
+/* ── BARRA SISTEMA ── */
+.sys-bar{background:rgba(11,26,48,.94);backdrop-filter:blur(8px);border-bottom:1px solid rgba(255,255,255,.07);position:sticky;top:0;z-index:20}
+.sys-bar .in{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:10px}
+.sys-marca{display:flex;align-items:center;gap:8px;color:var(--marfil);text-decoration:none}
+.sys-marca img{height:26px;width:26px;border-radius:6px}
+.sys-marca .word{font:700 1rem/1 var(--disp);letter-spacing:.02em}
+.sys-marca .word em{font-style:normal;color:var(--orange)}
+.sys-nav{display:flex;gap:10px;align-items:center}
+.sys-nav a,.sys-nav button{color:#C9D3E3;font:500 .65rem/1 var(--disp);letter-spacing:.12em;text-transform:uppercase;padding:7px 12px;border:1px solid rgba(255,255,255,.15);border-radius:6px;background:none;text-decoration:none;transition:all .2s}
+.sys-nav a:hover,.sys-nav button:hover{color:#fff;border-color:var(--turquesa)}
+.sys-nav .activo{color:#fff;border-color:var(--turquesa);background:rgba(0,168,150,.12)}
+
+/* ── ENCABEZADO ── */
+.r-header{background:var(--sup);border-bottom:1px solid var(--borde);padding:20px 0}
+.r-header .in{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.r-header h1{font:600 1.3rem/1.2 var(--disp);color:var(--navy)}
+.r-header h1 span{color:var(--orange)}
+.r-periodos{display:flex;gap:5px;flex-wrap:wrap}
+.r-per-btn{font:500 .68rem/1 var(--disp);padding:6px 14px;border:1px solid var(--borde);border-radius:6px;background:#fff;color:var(--pizarra);cursor:pointer;transition:all .15s}
+.r-per-btn:hover{border-color:var(--blue);color:var(--blue)}
+.r-per-btn.activo{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+/* ── TILES RESUMEN ── */
+.r-tiles{padding:20px 0 0}
+.r-tiles .in{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.r-tile{background:#fff;border:1px solid var(--borde);border-radius:10px;padding:16px;display:grid;gap:4px}
+.r-tile .etiqueta{font:500 .62rem/1 var(--disp);letter-spacing:.1em;text-transform:uppercase;color:var(--pizarra)}
+.r-tile .cifra{font:700 1.4rem/1.1 var(--disp);color:var(--navy)}
+.r-tile .detalle{font:400 .72rem/1.3 var(--sans);color:#888}
+.r-tile.positivo .cifra{color:var(--verde)}
+.r-tile.negativo .cifra{color:var(--rojo)}
+
+/* ── SECCIONES ── */
+.r-seccion{padding:24px 0}
+.r-sec-titulo{font:700 .7rem/1 var(--disp);letter-spacing:.16em;text-transform:uppercase;color:var(--blue);padding-bottom:8px;border-bottom:2px solid var(--blue);margin-bottom:16px}
+
+/* ── ATRIBUTOS ── */
+.r-atributos{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.r-attr{background:#fff;border:1px solid var(--borde);border-radius:8px;padding:14px;display:grid;gap:6px}
+.r-attr .nombre{font:600 .76rem/1 var(--disp);color:var(--navy)}
+.r-attr .barra-bg{height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden}
+.r-attr .barra-fg{height:100%;border-radius:4px;transition:width .4s ease}
+.r-attr .valor{font:600 .7rem/1 var(--disp);color:var(--pizarra);text-align:right}
+
+/* ── RANKING ── */
+.r-ranking{background:#fff;border:1px solid var(--borde);border-radius:10px;overflow:hidden}
+.r-ranking table{width:100%;border-collapse:collapse;font-size:.84rem}
+.r-ranking th{background:var(--navy);color:#fff;font:600 .64rem/1 var(--disp);letter-spacing:.1em;text-transform:uppercase;padding:10px 12px;text-align:left}
+.r-ranking td{padding:10px 12px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
+.r-ranking tr:last-child td{border-bottom:0}
+.r-ranking tr.mi-equipo{background:#EFF6FF}
+.r-ranking .pos{font:700 1rem/1 var(--disp);color:var(--navy);width:40px;text-align:center}
+.r-ranking .pos.p1{color:var(--orange)}
+.r-ranking .empresa{font:600 .82rem/1.2 var(--disp)}
+.r-ranking .num{font-variant-numeric:tabular-nums;text-align:right;font:500 .82rem/1 var(--sans)}
+.r-ranking .num.positivo{color:var(--verde)}
+.r-ranking .num.negativo{color:var(--rojo)}
+
+/* ── MULTIPLICADORES ── */
+.r-mults{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.r-mult{background:#fff;border:1px solid var(--borde);border-radius:8px;padding:16px;text-align:center}
+.r-mult .etiqueta{font:500 .62rem/1 var(--disp);letter-spacing:.1em;text-transform:uppercase;color:var(--pizarra);margin-bottom:8px}
+.r-mult .gauge{position:relative;width:100px;height:52px;margin:0 auto;overflow:hidden}
+.r-mult .gauge-bg{width:100px;height:100px;border-radius:50%;border:10px solid #e5e7eb;border-bottom-color:transparent;border-left-color:transparent;transform:rotate(225deg);position:absolute;top:0;left:0}
+.r-mult .gauge-fg{width:100px;height:100px;border-radius:50%;border:10px solid var(--turquesa);border-bottom-color:transparent;border-left-color:transparent;position:absolute;top:0;left:0;transition:transform .6s ease}
+.r-mult .gauge-val{font:700 1.2rem/1 var(--disp);color:var(--navy);position:absolute;bottom:0;left:50%;transform:translateX(-50%)}
+
+/* ── ESTADOS ── */
+.r-cargando{text-align:center;padding:80px 20px;font:400 .95rem/1.5 var(--sans);color:#888}
+.r-vacio{text-align:center;padding:80px 20px}
+.r-vacio h2{font:400 1.3rem/1.3 var(--disp);color:#888;margin-bottom:8px}
+.r-vacio p{font:400 .9rem/1.5 var(--sans);color:#aaa}
+
+/* ── RESPONSIVE ── */
+@media(max-width:640px){
+  .r-tiles .in{grid-template-columns:repeat(2,1fr)}
+  .r-ranking{overflow-x:auto}
+  .r-ranking table{min-width:600px}
+  .sys-nav a,.sys-nav button{font-size:.58rem;padding:5px 8px}
+  .r-header h1{font-size:1.1rem}
+}
+</style>
+</head>
+<body>
+
+<!-- BARRA SISTEMA -->
+<nav class="sys-bar">
+  <div class="in">
+    <a href="index.html" class="sys-marca">
+      <img src="img/icon.png" alt="CE">
+      <span class="word">CTRL <em>ENTROPICO</em></span>
+    </a>
+    <div class="sys-nav">
+      <a href="decisiones.html">Decisiones</a>
+      <a href="voxliber.html">Vox Liber</a>
+      <a href="resultados.html" class="activo">Resultados</a>
+      <button onclick="Auth.logout()" style="color:#ff6b6b;border-color:rgba(255,107,107,.3)">Salir</button>
+    </div>
+  </div>
+</nav>
+
+<div id="app">
+  <div class="r-cargando">Cargando resultados...</div>
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/resultados.js"></script>
+<script>
+API.configurar('https://script.google.com/macros/s/AKfycbw6C9ihsdqUnD2jolAxeb2TFG3IDqzNcuAZP8MSk8J-qpseuY2KDxKB_8ub68oZvISi/exec');
+
+Auth.init({
+  onLogin: function(usuario) {
+    ResultadosUI.init(usuario);
+  },
+  onLogout: function() {
+    window.location.href = 'index.html';
+  }
+});
+</script>
+</body>
+</html>
