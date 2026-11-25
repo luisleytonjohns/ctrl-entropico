@@ -112,6 +112,14 @@ const API = (function() {
   async function generarPeriodico(cursoId, periodo) { return llamar('generarPeriodico', { cursoId: cursoId, periodo: periodo }); }
 
   // ══════════════════════════════════════════════════
+  // ATAJOS: DISEÑO ESTRATÉGICO
+  // ══════════════════════════════════════════════════
+
+  async function opcionesDisenoEstrategico(cursoId) { return llamar('opcionesDisenoEstrategico', { cursoId: cursoId }); }
+  async function guardarDisenoEstrategico(datos) { return llamar('guardarDisenoEstrategico', datos); }
+  async function obtenerDisenoEstrategico(cursoId) { return llamar('obtenerDisenoEstrategico', { cursoId: cursoId }); }
+
+  // ══════════════════════════════════════════════════
   // ATAJOS: CALIFICACIONES
   // ══════════════════════════════════════════════════
 
@@ -166,6 +174,10 @@ const API = (function() {
     obtenerPeriodico: obtenerPeriodico,
     listarPeriodicos: listarPeriodicos,
     generarPeriodico: generarPeriodico,
+    // Diseño estratégico
+    opcionesDisenoEstrategico: opcionesDisenoEstrategico,
+    guardarDisenoEstrategico: guardarDisenoEstrategico,
+    obtenerDisenoEstrategico: obtenerDisenoEstrategico,
     // Calificaciones
     misCalificaciones: misCalificaciones,
     // Admin
