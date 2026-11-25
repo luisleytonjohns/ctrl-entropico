@@ -150,8 +150,16 @@ const Decisiones = (function() {
         if (esActual) html += ' <span style="font-size:.55rem;opacity:.7">(actual)</span>';
         html += '</button>';
       }
+      // Botón histórico completo
+      if (Object.keys(_historial).length > 1) {
+        html += '<button onclick="Decisiones.verHistoricoCompleto()" style="margin-left:8px;font:500 .65rem/1 sans-serif;padding:5px 12px;border:1px solid #00A896;border-radius:5px;cursor:pointer;background:none;color:#00A896;letter-spacing:.06em;text-transform:uppercase">📋 Histórico completo</button>';
+      }
+
       html += '</div>';
     }
+
+    // Panel histórico completo (oculto por defecto)
+    html += '<div id="panel-historico-completo" style="display:none;margin-bottom:16px"></div>';
 
     if (!soloLectura) html += '<div id="barra-presupuesto" style="margin-bottom:1rem"></div>';
 
@@ -425,6 +433,111 @@ const Decisiones = (function() {
 
   function invalidarCatalogo() { _catalogo = null; }
 
+  /**
+   * Muestra/oculta la tabla histórica consolidada de decisiones.
+   */
+  function verHistoricoCompleto() {
+    var panel = document.getElementById('panel-historico-completo');
+    if (!panel) return;
+
+    if (panel.style.display !== 'none') {
+      panel.style.display = 'none';
+      return;
+    }
+
+    if (!_catalogo) {
+      panel.innerHTML = '<p style="color:#888;font-size:.85rem">Cargando catálogo...</p>';
+      panel.style.display = 'block';
+      return;
+    }
+
+    var periodos = [];
+    for (var p = 1; p <= _periodoActual; p++) {
+      if (_historial[p]) periodos.push(p);
+    }
+    if (periodos.length < 2) {
+      panel.innerHTML = '<p style="color:#888;font-size:.85rem">Se necesitan al menos 2 períodos para mostrar el histórico.</p>';
+      panel.style.display = 'block';
+      return;
+    }
+
+    var modulos = _catalogo.modulos;
+    var html = '<div style="background:#fff;border:1px solid #ddd;border-radius:10px;overflow:hidden">';
+    html += '<div style="background:#1B2A4A;color:#fff;padding:10px 14px;display:flex;align-items:center;justify-content:space-between">';
+    html += '<span style="font:700 .7rem/1 sans-serif;letter-spacing:.12em;text-transform:uppercase">Histórico completo de decisiones</span>';
+    html += '<button onclick="document.getElementById(\'panel-historico-completo\').style.display=\'none\'" style="background:none;border:none;color:#fff;cursor:pointer;font-size:1rem">&times;</button>';
+    html += '</div>';
+    html += '<div style="overflow-x:auto;max-height:600px;overflow-y:auto">';
+    html += '<table style="width:100%;border-collapse:collapse;font-size:.8rem;min-width:' + (220 + periodos.length * 110) + 'px">';
+
+    // Encabezado
+    html += '<thead style="position:sticky;top:0;z-index:1"><tr>';
+    html += '<th style="text-align:left;padding:8px 10px;background:#1B2A4A;color:#fff;min-width:200px;position:sticky;left:0;z-index:2">Variable</th>';
+    for (var h = 0; h < periodos.length; h++) {
+      var esSel = periodos[h] === _periodoViendo;
+      html += '<th style="text-align:right;padding:8px 10px;background:' + (esSel ? '#1a3a5c' : '#1B2A4A') + ';color:#fff;min-width:100px">P' + periodos[h] + '</th>';
+    }
+    html += '</tr></thead><tbody>';
+
+    // Por cada módulo
+    for (var mod in modulos) {
+      var moduloData = modulos[mod];
+      if (!moduloData || !moduloData.variables || moduloData.variables.length === 0) continue;
+
+      // Fila separador del módulo
+      html += '<tr><td colspan="' + (periodos.length + 1) + '" style="background:' + (COLORES_MODULO[mod] || '#f5f5f5') + ';padding:6px 10px;font:600 .7rem/1 sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#1B2A4A;position:sticky;left:0">';
+      html += (ICONOS_MODULO[mod] || '') + ' ' + (NOMBRES_MODULO[mod] || mod);
+      html += '</td></tr>';
+
+      var variables = moduloData.variables;
+      for (var vi = 0; vi < variables.length; vi++) {
+        var v = variables[vi];
+        html += '<tr>';
+        html += '<td style="padding:5px 10px;border-bottom:1px solid #f0f0f0;font:500 .78rem/1.2 sans-serif;color:#333;position:sticky;left:0;background:#fff">' + v.nombre + '</td>';
+
+        for (var pi = 0; pi < periodos.length; pi++) {
+          var val = obtenerValorGuardado_(_historial[periodos[pi]], mod, v.id);
+          var mostrar = '';
+
+          if (val !== null && val !== '') {
+            if (v.esSeleccion && v.opciones) {
+              var opEnc = v.opciones.find(function(o) { return o.id === val; });
+              mostrar = opEnc ? opEnc.nombre : val;
+            } else if (v.esMonetaria) {
+              mostrar = '$' + Number(val).toLocaleString('es-CL');
+            } else if (v.esPorcentaje) {
+              mostrar = val + '%';
+            } else {
+              mostrar = val;
+            }
+          } else {
+            mostrar = '<span style="color:#ccc">—</span>';
+          }
+
+          // Flecha de cambio vs anterior
+          var flechaHtml = '';
+          if (pi > 0 && !v.esSeleccion) {
+            var valAnt = obtenerValorGuardado_(_historial[periodos[pi - 1]], mod, v.id);
+            if (val !== null && val !== '' && valAnt !== null && valAnt !== '') {
+              var diff = parseFloat(val) - parseFloat(valAnt);
+              if (diff > 0) flechaHtml = ' <span style="color:#16a34a;font-size:.65rem">↑</span>';
+              else if (diff < 0) flechaHtml = ' <span style="color:#dc2626;font-size:.65rem">↓</span>';
+            }
+          }
+
+          var esSel2 = periodos[pi] === _periodoViendo;
+          html += '<td style="text-align:right;padding:5px 10px;border-bottom:1px solid #f0f0f0;font:400 .78rem/1.2 sans-serif;' + (esSel2 ? 'background:#EFF6FF;' : '') + '">' + mostrar + flechaHtml + '</td>';
+        }
+        html += '</tr>';
+      }
+    }
+
+    html += '</tbody></table></div></div>';
+
+    panel.innerHTML = html;
+    panel.style.display = 'block';
+  }
+
   return {
     render: render,
     cargarCatalogo: cargarCatalogo,
@@ -432,7 +545,8 @@ const Decisiones = (function() {
     guardarVariable: guardarVariable,
     enviarDefinitiva: enviarDefinitiva,
     invalidarCatalogo: invalidarCatalogo,
-    verPeriodo: verPeriodo
+    verPeriodo: verPeriodo,
+    verHistoricoCompleto: verHistoricoCompleto
   };
 
 })();

@@ -238,6 +238,11 @@ var ResultadosUI = (function() {
       html += '</div></div>';
     }
 
+    // ── TABLA HISTÓRICA CONSOLIDADA ──
+    if (periodoPublicado > 1 && Object.keys(historial).length > 1) {
+      html += renderTablaHistorica_();
+    }
+
     // ── RANKING ──
     if (ranking && ranking.equipos && ranking.equipos.length > 0) {
       html += '<div class="r-seccion"><div class="in">';
@@ -425,6 +430,134 @@ var ResultadosUI = (function() {
     }
 
     html += '</div>';
+    return html;
+  }
+
+  // ══════════════════════════════════════════════════
+  // TABLA HISTÓRICA CONSOLIDADA
+  // ══════════════════════════════════════════════════
+
+  function renderTablaHistorica_() {
+    var periodos = [];
+    for (var p = 1; p <= periodoPublicado; p++) {
+      if (historial[p]) periodos.push(p);
+    }
+    if (periodos.length < 2) return '';
+
+    var metricas = [
+      {key:'ingresos', label:'Ingresos', fmt:'moneda'},
+      {key:'costo_variable', label:'Costo variable', fmt:'moneda'},
+      {key:'margen_bruto', label:'Margen bruto', fmt:'moneda'},
+      {key:'gastos_operacionales', label:'Gastos operacionales', fmt:'moneda'},
+      {key:'resultado_operacional', label:'Resultado operacional', fmt:'moneda'},
+      {key:'demanda', label:'Demanda (uds.)', fmt:'num'},
+      {key:'precio_venta', label:'Precio de venta', fmt:'moneda'},
+      {key:'multiplicador_rrhh', label:'Mult. RRHH', fmt:'dec2'},
+      {key:'eficiencia_logistica', label:'Efic. logística', fmt:'pct'},
+      {key:'puntaje_motor', label:'Puntaje motor', fmt:'dec1'},
+      {key:'nota_simulada', label:'Nota simulada', fmt:'dec1'}
+    ];
+
+    var html = '<div class="r-seccion"><div class="in">';
+    html += '<div class="r-sec-titulo">Histórico consolidado de resultados</div>';
+    html += '<div class="r-ranking" style="overflow-x:auto">';
+    html += '<table style="min-width:' + (200 + periodos.length * 120) + 'px">';
+
+    // Encabezado
+    html += '<tr><th style="text-align:left;min-width:180px">Métrica</th>';
+    for (var h = 0; h < periodos.length; h++) {
+      var esSel = periodos[h] === periodoSeleccionado;
+      html += '<th style="text-align:right;min-width:100px' + (esSel ? ';background:#1a3a5c' : '') + '">P' + periodos[h] + '</th>';
+    }
+    html += '</tr>';
+
+    // Filas de métricas
+    for (var m = 0; m < metricas.length; m++) {
+      var met = metricas[m];
+      html += '<tr>';
+      html += '<td class="empresa" style="font-size:.78rem">' + met.label + '</td>';
+
+      for (var pi = 0; pi < periodos.length; pi++) {
+        var d = historial[periodos[pi]];
+        var v = num(d[met.key]);
+        var formatted = '';
+        if (met.fmt === 'moneda') formatted = moneda(v);
+        else if (met.fmt === 'num') formatted = formatNum(v);
+        else if (met.fmt === 'dec1') formatted = formatNum(v, 1);
+        else if (met.fmt === 'dec2') formatted = formatNum(v, 2) + 'x';
+        else if (met.fmt === 'pct') formatted = formatNum(v * 100, 1) + '%';
+
+        // Color para resultado operacional
+        var claseColor = '';
+        if (met.key === 'resultado_operacional' || met.key === 'margen_bruto') {
+          claseColor = clasePosNeg(v);
+        }
+
+        // Variación vs período anterior
+        var varHtml = '';
+        if (pi > 0) {
+          var vAnt = num(historial[periodos[pi - 1]][met.key]);
+          if (vAnt !== 0) {
+            var cambio = ((v - vAnt) / Math.abs(vAnt)) * 100;
+            var signo = cambio >= 0 ? '+' : '';
+            var colorVar = cambio >= 0 ? '#16a34a' : '#dc2626';
+            if (met.key === 'costo_variable' || met.key === 'gastos_operacionales') {
+              colorVar = cambio <= 0 ? '#16a34a' : '#dc2626';
+            }
+            varHtml = '<div style="font-size:.6rem;color:' + colorVar + '">' + signo + formatNum(cambio, 1) + '%</div>';
+          }
+        }
+
+        var esSel2 = periodos[pi] === periodoSeleccionado;
+        html += '<td class="num ' + claseColor + '" style="' + (esSel2 ? 'background:#EFF6FF;' : '') + '">' + formatted + varHtml + '</td>';
+      }
+      html += '</tr>';
+    }
+
+    // Filas de atributos
+    var attrKeys = [];
+    for (var ap = 0; ap < periodos.length; ap++) {
+      var attrs = parseAtributos(historial[periodos[ap]].atributos);
+      if (attrs) {
+        for (var ak in attrs) {
+          if (attrKeys.indexOf(ak) === -1) attrKeys.push(ak);
+        }
+      }
+    }
+
+    if (attrKeys.length > 0) {
+      html += '<tr><td colspan="' + (periodos.length + 1) + '" style="background:#f8f9fa;font:600 .68rem/1 var(--disp);letter-spacing:.1em;text-transform:uppercase;color:var(--blue);padding:8px 12px">Atributos</td></tr>';
+
+      for (var ai = 0; ai < attrKeys.length; ai++) {
+        var attrName = attrKeys[ai];
+        html += '<tr>';
+        html += '<td class="empresa" style="font-size:.78rem">' + capitalizar(attrName) + '</td>';
+
+        for (var api = 0; api < periodos.length; api++) {
+          var attrsP = parseAtributos(historial[periodos[api]].atributos);
+          var attrVal = attrsP && attrsP[attrName] ? parseFloat(attrsP[attrName]) * 100 : 0;
+
+          var varAttrHtml = '';
+          if (api > 0) {
+            var attrsPrev = parseAtributos(historial[periodos[api - 1]].atributos);
+            var attrValPrev = attrsPrev && attrsPrev[attrName] ? parseFloat(attrsPrev[attrName]) * 100 : 0;
+            var diffAttr = attrVal - attrValPrev;
+            if (Math.abs(diffAttr) > 0.1) {
+              var signoAttr = diffAttr >= 0 ? '+' : '';
+              var colorAttr = diffAttr >= 0 ? '#16a34a' : '#dc2626';
+              varAttrHtml = '<div style="font-size:.6rem;color:' + colorAttr + '">' + signoAttr + formatNum(diffAttr, 1) + ' pp</div>';
+            }
+          }
+
+          var esSel3 = periodos[api] === periodoSeleccionado;
+          html += '<td class="num" style="' + (esSel3 ? 'background:#EFF6FF;' : '') + '">' + formatNum(attrVal, 1) + '%' + varAttrHtml + '</td>';
+        }
+        html += '</tr>';
+      }
+    }
+
+    html += '</table></div>';
+    html += '</div></div>';
     return html;
   }
 
