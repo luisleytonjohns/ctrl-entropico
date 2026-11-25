@@ -104,6 +104,14 @@ const API = (function() {
   async function descargarMaterial(datos) { return llamar('descargarMaterial', datos); }
 
   // ══════════════════════════════════════════════════
+  // ATAJOS: PERIÓDICO VOX LIBER
+  // ══════════════════════════════════════════════════
+
+  async function obtenerPeriodico(cursoId, periodo) { return llamar('obtenerPeriodico', { cursoId: cursoId, periodo: periodo }); }
+  async function listarPeriodicos(cursoId) { return llamar('listarPeriodicos', { cursoId: cursoId }); }
+  async function generarPeriodico(cursoId, periodo) { return llamar('generarPeriodico', { cursoId: cursoId, periodo: periodo }); }
+
+  // ══════════════════════════════════════════════════
   // ATAJOS: CALIFICACIONES
   // ══════════════════════════════════════════════════
 
@@ -154,6 +162,10 @@ const API = (function() {
     responderControl: responderControl,
     listarMateriales: listarMateriales,
     descargarMaterial: descargarMaterial,
+    // Periódico Vox Liber
+    obtenerPeriodico: obtenerPeriodico,
+    listarPeriodicos: listarPeriodicos,
+    generarPeriodico: generarPeriodico,
     // Calificaciones
     misCalificaciones: misCalificaciones,
     // Admin
