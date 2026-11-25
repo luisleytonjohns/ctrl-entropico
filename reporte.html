@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reporte Ejecutivo &mdash; CTRL ENTROPICO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap">
+<link rel="icon" href="img/icon.png" type="image/png">
+<style>
+:root{
+  --navy:#1B2A4A;--blue:#2E5C8A;--orange:#E8600A;--turquesa:#00A896;
+  --marfil:#F7F5EF;--pizarra:#475569;--borde:#DEDBD2;
+  --verde:#16a34a;--rojo:#dc2626;
+  --disp:"Lexend",system-ui,sans-serif;--sans:"Inter",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:#fff;color:#1a1a1a;font:11pt/1.5 var(--sans)}
+.in{max-width:900px;margin:0 auto;padding:0 24px}
+h1,h2,h3{font-family:var(--disp);margin:0;color:var(--navy)}
+table{width:100%;border-collapse:collapse;font-size:10pt}
+th{background:var(--navy);color:#fff;font:600 .7rem/1 var(--disp);letter-spacing:.08em;text-transform:uppercase;padding:7px 10px;text-align:left}
+td{padding:6px 10px;border-bottom:1px solid #eee}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.pos{color:var(--verde)}.neg{color:var(--rojo)}
+
+/* Barra superior (solo pantalla) */
+.rpt-bar{background:var(--navy);padding:10px 0;position:sticky;top:0;z-index:10}
+.rpt-bar .in{display:flex;align-items:center;justify-content:space-between}
+.rpt-bar a{color:#C9D3E3;font:500 .65rem/1 var(--disp);letter-spacing:.1em;text-transform:uppercase;text-decoration:none;padding:6px 12px;border:1px solid rgba(255,255,255,.2);border-radius:5px}
+.rpt-bar a:hover{color:#fff;border-color:var(--turquesa)}
+.rpt-bar .marca{display:flex;align-items:center;gap:8px;color:var(--marfil);text-decoration:none}
+.rpt-bar .marca img{height:24px;width:24px;border-radius:5px}
+.rpt-bar .marca span{font:700 .9rem/1 var(--disp)}
+.rpt-bar .marca em{font-style:normal;color:var(--orange)}
+.btn-print{background:var(--orange);color:#fff;border:none;border-radius:5px;padding:6px 16px;font:600 .65rem/1 var(--disp);letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+.btn-print:hover{background:#B84A08}
+
+/* Portada */
+.rpt-portada{background:linear-gradient(135deg,#1B2A4A,#2E5C8A);color:#fff;padding:40px 0;text-align:center;page-break-after:always}
+.rpt-portada h1{font:700 2rem/1.1 var(--disp);margin-bottom:6px}
+.rpt-portada .sub{font:400 1rem/1.3 var(--sans);color:#C9D3E3}
+.rpt-portada .meta{font:400 .8rem/1.4 var(--sans);color:#8899B0;margin-top:16px}
+.rpt-badge{display:inline-block;background:var(--orange);color:#fff;font:700 .7rem/1 var(--disp);padding:6px 16px;border-radius:999px;margin-top:12px;letter-spacing:.06em}
+
+/* Secciones */
+.rpt-sec{padding:20px 0;page-break-inside:avoid}
+.rpt-sec-titulo{font:700 .7rem/1 var(--disp);letter-spacing:.14em;text-transform:uppercase;color:var(--blue);padding-bottom:6px;border-bottom:2px solid var(--blue);margin-bottom:12px}
+
+/* Tiles */
+.rpt-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.rpt-tile{border:1px solid var(--borde);border-radius:8px;padding:12px;text-align:center}
+.rpt-tile .et{font:500 .58rem/1 var(--disp);letter-spacing:.08em;text-transform:uppercase;color:var(--pizarra)}
+.rpt-tile .val{font:700 1.2rem/1.1 var(--disp);color:var(--navy);margin-top:4px}
+.rpt-tile .var{font:600 .65rem/1 var(--disp);margin-top:3px}
+.rpt-tile.pos .var{color:var(--verde)}.rpt-tile.neg .var{color:var(--rojo)}
+
+/* Barras atributos */
+.rpt-attr{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.rpt-attr-item{display:flex;align-items:center;gap:8px;font-size:9pt}
+.rpt-attr-item .nombre{width:120px;font:500 .72rem/1 var(--disp);color:var(--navy)}
+.rpt-attr-item .barra{flex:1;height:7px;background:#e5e7eb;border-radius:4px;overflow:hidden}
+.rpt-attr-item .fill{height:100%;border-radius:4px}
+.rpt-attr-item .pct{width:40px;text-align:right;font:600 .68rem/1 var(--disp);color:var(--pizarra)}
+
+/* Mi equipo en ranking */
+.mi-eq{background:#EFF6FF}
+
+/* Cargando */
+.rpt-cargando{text-align:center;padding:80px 20px;font:400 .95rem/1.5 var(--sans);color:#888}
+
+/* ── IMPRESIÓN ── */
+@media print{
+  .rpt-bar{display:none!important}
+  body{font-size:10pt;background:#fff}
+  .rpt-portada{padding:60px 0;background:var(--navy)!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .rpt-tiles{grid-template-columns:repeat(4,1fr)}
+  .rpt-sec{page-break-inside:avoid}
+  table{page-break-inside:auto}
+  tr{page-break-inside:avoid}
+  th{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .mi-eq{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+@media(max-width:640px){
+  .rpt-tiles{grid-template-columns:repeat(2,1fr)}
+  .rpt-attr{grid-template-columns:1fr}
+  .rpt-portada h1{font-size:1.4rem}
+}
+</style>
+</head>
+<body>
+
+<!-- BARRA (solo pantalla) -->
+<nav class="rpt-bar">
+  <div class="in">
+    <a href="index.html" class="marca">
+      <img src="img/icon.png" alt="">
+      <span>CTRL <em>ENTROPICO</em></span>
+    </a>
+    <div style="display:flex;gap:8px">
+      <a href="resultados.html">Volver a resultados</a>
+      <button class="btn-print" onclick="window.print()">Imprimir / PDF</button>
+    </div>
+  </div>
+</nav>
+
+<div id="app">
+  <div class="rpt-cargando">Generando reporte...</div>
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/reporte.js"></script>
+<script>
+API.configurar('https://script.google.com/macros/s/AKfycbw6C9ihsdqUnD2jolAxeb2TFG3IDqzNcuAZP8MSk8J-qpseuY2KDxKB_8ub68oZvISi/exec');
+
+Auth.init({
+  onLogin: function(usuario) { ReporteUI.init(usuario); },
+  onLogout: function() { window.location.href = 'index.html'; }
+});
+</script>
+</body>
+</html>
